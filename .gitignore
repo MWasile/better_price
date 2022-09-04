@@ -1,6 +1,10 @@
 # Created by https://www.toptal.com/developers/gitignore/api/pycharm,django,venv
 # Edit at https://www.toptal.com/developers/gitignore?templates=pycharm,django,venv
 
+
+.idea/
+.env
+
 ### Django ###
 *.log
 *.pot
