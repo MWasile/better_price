@@ -7,6 +7,7 @@ services:
       - ../better_ceneo/env/.env
     depends_on:
       - backend_db
+      - celery_redis
     restart: on-failure
     ports:
       - 8000:8000
@@ -22,6 +23,56 @@ services:
     ports:
       - 5432:5432
 
+  celery_redis:
+    image: redis:7
+    restart: always
+    command: redis-server
+    ports:
+      - 6379:6379
+
+  celery_worker_one:
+    build:
+      context: .
+      dockerfile: DockerFileWorker
+    env_file:
+      - ../better_ceneo/env/.env
+    depends_on:
+      - celery_redis
+    command: ['python','-m','celery','-A','config','worker','-Q','email_queue','-l','INFO']
+    volumes:
+      - ./:/app/
+
+  celery_worker_two:
+    build:
+      context: .
+      dockerfile: DockerFileWorker
+    env_file:
+      - ../better_ceneo/env/.env
+    depends_on:
+      - celery_redis
+    command: ['python','-m','celery','-A','config','worker','-Q','scrap_queue','-l','INFO']
+    volumes:
+      - ./:/app/
+
+  celery_beat:
+    build:
+      context: .
+      dockerfile: DockerFileWorker
+    env_file:
+      - ../better_ceneo/env/.env
+    depends_on:
+      - celery_redis
+      - celery_worker_one
+      - celery_worker_two
+
+    command: ['celery','-A','config.celery','beat']
+    volumes:
+      - ./:/app/
+
 
 volumes:
   backend_db_volume:
+
+networks:
+  backend_network:
+    driver: bridge
