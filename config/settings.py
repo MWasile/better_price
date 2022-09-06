@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'api.apps.ApiConfig',
     'users.apps.UsersConfig',
     'home.apps.HomeConfig',
+    'scraper.apps.ScraperConfig',
 ]
 
 MIDDLEWARE = [
@@ -166,3 +167,9 @@ CELERY_BEAT_SCHEDULE = {
     },
 }
 
+# SCRAPER CONFIG
+
+SCRAPER_BOOKSTORES = [
+    'Empik',
+    'Woblink',
+]
