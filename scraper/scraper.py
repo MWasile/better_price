@@ -38,12 +38,11 @@ class Task:
         task_keyword: str
         status_flag: Boolean
         data_from_site: dict
-
     """
     pass
 
 
-class ScrapTaskFactory(TaskFactory):
+class TaskManager(TaskFactory):
     """
     TODO:
         1. Create task for all available bookstores
@@ -52,34 +51,43 @@ class ScrapTaskFactory(TaskFactory):
     pass
 
 
-class EmailTaskFactory(TaskFactory):
-    """
-    TODO:
-        1. Create schedule task
-        2. Crete model with status / user email / price?
-        3. Send email?
-    """
-    pass
-
-
 class Woblink(ScrapEngine):
     """
     TODO:
         core setup:
-        BOOKSTORE_URL
-        qs -> main ebook container
-        qs -> one ebook container
-        dict -> ebook detai {
-                'author':
-                'title':
-                'price':
-                'url':
-                'url image?'
+        BOOKSTORE_URL               DONE
+        qs -> main ebook container  DONE
+        qs -> one ebook container   DONE
+        dict -> ebook detai {       NOT YET
+                'author':           DONE
+                'title':            DONE
+                'price':            DONE
+                'url':              NOT YET
+                'url image?'        NOT YET
                             }
         method:
-        1. get_url -> add %20 or sth else to url+userinput
+        1. get_url -> add %20 or sth else to url+userinput DONE
     """
-    pass
+
+    BOOKSTORE_URL = 'https://woblink.com/katalog/ebooki?szukasz='
+    ALL_EBOOK_CONTAINER = 'ul.catalog-items.lista'
+    EBOOK_CONTAINER = 'div [data-item-layout="tiles"]'
+    EBOOK_DETAIL = {
+        'author': 'p.catalog-tile__author a',
+        'title': 'a.catalog-tile__title span',
+        'price': 'p.catalog-tile__new-price span',
+        # TODO direclink, url_image
+    }
+
+    def __init__(self, search_ebook_name):
+        super().__init__()
+        self.search_ebook_name = search_ebook_name
+        self.url = self.get_url()
+
+    def get_url(self):
+        if len(self.search_ebook_name.split()) < 2:
+            return ''.join([self.BOOKSTORE_URL, self.search_ebook_name])
+        return ''.join([self.BOOKSTORE_URL, '+'.join(self.search_ebook_name.split())])
 
 
 class Empik(ScrapEngine):
