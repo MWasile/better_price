@@ -1,7 +1,8 @@
+import sys
 from dataclasses import dataclass
-from abc import ABC
+from abc import ABC, ABCMeta, abstractmethod
 
-from django.conf import settings
+from config import settings
 
 
 class ScrapEngine(ABC):
@@ -17,16 +18,6 @@ class ScrapEngine(ABC):
     pass
 
 
-class TaskFactory(ABC):
-    """
-    TODO:
-        1. Make class instance TASK with inh bookstores / email too
-        2. Import bookstore setup from django.config -> errors?
-    """
-    pass
-
-
-@dataclass
 class Task:
     """
     TODO:
@@ -39,10 +30,46 @@ class Task:
         status_flag: Boolean
         data_from_site: dict
     """
-    pass
+
+    def __init__(self, user_input):
+        super().__init__(user_input)
+        self.user_inputt = user_input
 
 
-class TaskManager(TaskFactory):
+class TaskFactory(metaclass=ABCMeta):
+    """
+    TODO:
+        1. Make class instance TASK with inh bookstores / email too
+        2. Import bookstore setup from django.config -> errors?
+    """
+
+    @abstractmethod
+    def create_task_istance(user_input):
+
+        bookstore_settings = settings.SCRAPER_BOOKSTORES
+
+        if not bookstore_settings:
+            return False
+
+        core_inheritance = getattr(sys.modules[__name__], 'Task')
+        inheritances = \
+            tuple(
+                (core_inheritance, getattr(sys.modules[__name__], import_name)) for import_name in bookstore_settings)
+
+        tasks = []
+
+        for inheritance in inheritances:
+            tasks.append(
+                type(
+                    'ReadyTask',
+                    inheritance,
+                    {'__init__': user_input}
+                ))
+
+        return tasks
+
+
+class TaskManager(TaskFactory, ABC):
     """
     TODO:
         1. Create task for all available bookstores
@@ -79,16 +106,26 @@ class Woblink(ScrapEngine):
         # TODO direclink, url_image
     }
 
-    def __init__(self, search_ebook_name):
+    def __init__(self, user_input):
         super().__init__()
-        self.search_ebook_name = search_ebook_name
+        self.user_input = user_input
         self.url = self.get_url()
 
     def get_url(self):
-        if len(self.search_ebook_name.split()) < 2:
-            return ''.join([self.BOOKSTORE_URL, self.search_ebook_name])
-        return ''.join([self.BOOKSTORE_URL, '+'.join(self.search_ebook_name.split())])
+        if len(self.user_input.split()) < 2:
+            return ''.join([self.BOOKSTORE_URL, self.user_input])
+        return ''.join([self.BOOKSTORE_URL, '+'.join(self.user_input.split())])
 
 
 class Empik(ScrapEngine):
-    pass
+    BOOKSTORE_URL = 'XDDDD'
+
+    def __init__(self, test):
+        self.test = test
+
+
+x = TaskFactory.create_task_istance('Maciej')
+
+for i in x:
+    print(vars(i))
+    print('*' * 10)
