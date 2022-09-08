@@ -33,7 +33,6 @@ class Task:
 
     def __init__(self, user_input):
         super().__init__(user_input)
-        self.user_inputt = user_input
 
 
 class TaskFactory(metaclass=ABCMeta):
@@ -44,27 +43,35 @@ class TaskFactory(metaclass=ABCMeta):
     """
 
     @abstractmethod
-    def create_task_istance(user_input):
-
-        bookstore_settings = settings.SCRAPER_BOOKSTORES
+    def create_task_istance(*, task_type, user_input):
+        try:
+            bookstore_settings = settings.SCRAPER_BOOKSTORES
+        except AttributeError:
+            raise ImportError("SCRAPER_BOOKSTORES must be specified in django settings.")
 
         if not bookstore_settings:
-            return False
+            raise ValueError(f'Bookstores class name must be specified in SCRAPER_BOOKSTORES')
+
+        if task_type not in ['ScrapyTask', 'EmailTask']:
+            raise ValueError(f'task_type must be "ScrapyTask" or "EmailTask", not {task_type}')
 
         core_inheritance = getattr(sys.modules[__name__], 'Task')
+
+        # Mix inheritance -> tuple(bookstoreclass spec in dj.settings / core task class)
         inheritances = \
             tuple(
                 (core_inheritance, getattr(sys.modules[__name__], import_name)) for import_name in bookstore_settings)
 
+        # Create ScrapyTask/EmailTask class object, based on specify bookstores inheritance.
+        tasks_base = [type(task_type, inheritance, {}) for inheritance in inheritances]
+
+        # Create class instanction, with innit based on user_input
+
         tasks = []
 
-        for inheritance in inheritances:
-            tasks.append(
-                type(
-                    'ReadyTask',
-                    inheritance,
-                    {'__init__': user_input}
-                ))
+        for mix_class in tasks_base:
+            new_instance = mix_class(user_input)
+            tasks.append(new_instance)
 
         return tasks
 
@@ -120,12 +127,12 @@ class Woblink(ScrapEngine):
 class Empik(ScrapEngine):
     BOOKSTORE_URL = 'XDDDD'
 
-    def __init__(self, test):
-        self.test = test
+    def __init__(self, user_input):
+        self.user_input = user_input
+        self.url = 'XD'
 
 
-x = TaskFactory.create_task_istance('Maciej')
+a = TaskFactory.create_task_istance(task_type='ScrapyTask', user_input='maciej mistrz swiata')
 
-for i in x:
-    print(vars(i))
-    print('*' * 10)
+for i in a:
+    print(i.url)
