@@ -58,6 +58,7 @@ class TaskFactory(metaclass=ABCMeta):
         core_inheritance = getattr(sys.modules[__name__], 'Task')
 
         # Mix inheritance -> tuple(bookstoreclass spec in dj.settings / core task class)
+        # TODO: add import modules if remove bookstoresclass from this file
         inheritances = \
             tuple(
                 (core_inheritance, getattr(sys.modules[__name__], import_name)) for import_name in bookstore_settings)
