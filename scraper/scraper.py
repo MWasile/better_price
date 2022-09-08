@@ -68,11 +68,7 @@ class TaskFactory(metaclass=ABCMeta):
 
         # Create class instanction, with innit based on user_input
 
-        tasks = []
-
-        for mix_class in tasks_base:
-            new_instance = mix_class(user_input)
-            tasks.append(new_instance)
+        tasks = [mix_class(user_input) for mix_class in tasks_base]
 
         return tasks
 
