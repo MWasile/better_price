@@ -3,7 +3,7 @@ import sys
 from django.db import DatabaseError, IntegrityError, DataError
 
 from config import settings
-from scraper.models import Task as modelTask
+from scraper.models import Task as modelTask, ScrapTask
 
 
 class ScrapEngine:
@@ -46,7 +46,16 @@ class Task:
         pass
 
     def db_save(self):
-        pass
+
+        new_scrap_task = ScrapTask(
+            owner_task=self.owner_model_id,
+            data=self._data_auto_save
+        )
+
+        try:
+            new_scrap_task.full_clean()
+        except:
+            pass
 
 
 class TaskFactory:
