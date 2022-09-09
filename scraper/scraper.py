@@ -1,11 +1,12 @@
 import sys
-from dataclasses import dataclass
-from abc import ABC, ABCMeta, abstractmethod
+
+from django.db import DatabaseError, IntegrityError, DataError
 
 from config import settings
+from scraper.models import Task as modelTask
 
 
-class ScrapEngine(ABC):
+class ScrapEngine:
     """
     TODO:
         1. Erorr handler?
@@ -35,14 +36,13 @@ class Task:
         super().__init__(user_input)
 
 
-class TaskFactory(metaclass=ABCMeta):
+class TaskFactory:
     """
     TODO:
         1. Make class instance TASK with inh bookstores / email too
         2. Import bookstore setup from django.config -> errors?
     """
-
-    @abstractmethod
+    @staticmethod
     def create_task_istance(*, task_type, user_input):
         try:
             bookstore_settings = settings.SCRAPER_BOOKSTORES
@@ -73,13 +73,33 @@ class TaskFactory(metaclass=ABCMeta):
         return tasks
 
 
-class TaskManager(TaskFactory, ABC):
+class TaskManager(TaskFactory):
     """
     TODO:
         1. Create task for all available bookstores
         2. Create model to agregate contentype relatons?
     """
-    pass
+
+    def __init__(self, task_type, user_input_search):
+        super().__init__()
+        self.user_input_search = user_input_search
+        self.model_id = self.create_task_model(task_type)
+
+    def create_task_model(self, task_type):
+        if not self.user_input_search:
+            raise ValueError('User input is required as parameter. Cannot be empty string.')
+
+        if task_type.lower() not in ['email', 'scrap']:
+            raise ValueError(f'task_type must be "email" or "scrap", not {task_type}')
+
+        try:
+            new_task_model = modelTask.objects.create(
+                task_type=task_type,
+                search_key=self.user_input_search)
+        except (TypeError, DatabaseError, IntegrityError, DataError) as err:
+            raise err
+        else:
+            return new_task_model.id
 
 
 class Woblink(ScrapEngine):
@@ -128,8 +148,3 @@ class Empik(ScrapEngine):
         self.user_input = user_input
         self.url = 'XD'
 
-
-a = TaskFactory.create_task_istance(task_type='ScrapyTask', user_input='maciej mistrz swiata')
-
-for i in a:
-    print(i.url)
