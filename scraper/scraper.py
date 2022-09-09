@@ -42,6 +42,7 @@ class TaskFactory:
         1. Make class instance TASK with inh bookstores / email too
         2. Import bookstore setup from django.config -> errors?
     """
+
     @staticmethod
     def create_task_istance(*, task_type, user_input):
         try:
@@ -83,23 +84,36 @@ class TaskManager(TaskFactory):
     def __init__(self, task_type, user_input_search):
         super().__init__()
         self.user_input_search = user_input_search
-        self.model_id = self.create_task_model(task_type)
+        self.task_type = task_type
+        self.model_id = self.create_task_model()
+        self.tasks = self.pin_tasks()
 
-    def create_task_model(self, task_type):
+    def create_task_model(self):
         if not self.user_input_search:
             raise ValueError('User input is required as parameter. Cannot be empty string.')
 
-        if task_type.lower() not in ['email', 'scrap']:
-            raise ValueError(f'task_type must be "email" or "scrap", not {task_type}')
+        if self.task_type.lower() not in ['emailtask', 'scrapytask']:
+            raise ValueError(f'task_type must be "ScrapyTask" or "EmailTask", not {self.task_type}')
 
         try:
             new_task_model = modelTask.objects.create(
-                task_type=task_type,
+                task_type=self.task_type,
                 search_key=self.user_input_search)
         except (TypeError, DatabaseError, IntegrityError, DataError) as err:
             raise err
         else:
             return new_task_model.id
+
+    def pin_tasks(self):
+        try:
+            new_tasks = self.create_task_istance(
+                task_type=self.task_type,
+                user_input=self.user_input_search
+            )
+        except (AttributeError, ValueError) as err:
+            print(err, 'Error while creating class instance.')
+            raise err
+        return new_tasks
 
 
 class Woblink(ScrapEngine):
@@ -147,4 +161,3 @@ class Empik(ScrapEngine):
     def __init__(self, user_input):
         self.user_input = user_input
         self.url = 'XD'
-
