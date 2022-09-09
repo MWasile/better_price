@@ -1,24 +1,26 @@
 from django.db import models
+from django.contrib.contenttypes.models import ContentType
 
 
-class ScrapyTask:
-    user_input = models.CharField(max_length=200)
-    status = models.BooleanField()
-    # results = contnttype TASK!!!
+class Task(models.Model):
+    task_type = models.CharField(max_length=10)
+    search_key = models.CharField(max_length=200)
 
 
-class EmailTask:
-    user_input = models.CharField(max_length=200)
-    status = models.BooleanField()
-    user_email = models.EmailField()
-    price_check = models.PositiveIntegerField()
-    # results = contnttype TASK!!!
+class BaseTask(models.Model):
+
+    owner_task = models.ForeignKey('Task', on_delete=models.CASCADE,
+                                   related_name='%(class)s',
+                                   related_query_name='%(class)s_related')
+    data = models.JSONField()
+
+    class Meta:
+        abstract = True
 
 
-class Task:
-    # task_id = links to parents /\
-    user_input = models.CharField(max_length=200)
-    status = models.BooleanField()
-    # TODO:
-    #   JSONField ? check how it works!
-    scrap_data = models.JSONField()
+class ScrapTask(BaseTask):
+    pass
+
+
+class EmailTask(BaseTask):
+    pass
