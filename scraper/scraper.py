@@ -32,8 +32,21 @@ class Task:
         data_from_site: dict
     """
 
-    def __init__(self, user_input):
+    def __init__(self, user_input, owner_model_id):
         super().__init__(user_input)
+        self.owner_model_id = owner_model_id
+        self._data_auto_save = {}
+
+    @property
+    def data_auto_save(self):
+        return self._data_auto_save
+
+    @data_auto_save.setter
+    def data_auto_save(self, scrap_data):
+        pass
+
+    def db_save(self):
+        pass
 
 
 class TaskFactory:
@@ -44,7 +57,7 @@ class TaskFactory:
     """
 
     @staticmethod
-    def create_task_istance(*, task_type, user_input):
+    def create_task_istance(*, task_type, user_input, owner_model_id):
         try:
             bookstore_settings = settings.SCRAPER_BOOKSTORES
         except AttributeError:
@@ -69,7 +82,7 @@ class TaskFactory:
 
         # Create class instanction, with innit based on user_input
 
-        tasks = [mix_class(user_input) for mix_class in tasks_base]
+        tasks = [mix_class(user_input, owner_model_id) for mix_class in tasks_base]
 
         return tasks
 
@@ -98,17 +111,18 @@ class TaskManager(TaskFactory):
         try:
             new_task_model = modelTask.objects.create(
                 task_type=self.task_type,
-                search_key=self.user_input_search)
+                search_key=self.user_input_search
+            )
         except (TypeError, DatabaseError, IntegrityError, DataError) as err:
             raise err
-        else:
-            return new_task_model.id
+        return new_task_model.id
 
     def pin_tasks(self):
         try:
             new_tasks = self.create_task_istance(
                 task_type=self.task_type,
-                user_input=self.user_input_search
+                user_input=self.user_input_search,
+                owner_model_id=self.model_id
             )
         except (AttributeError, ValueError) as err:
             print(err, 'Error while creating class instance.')
