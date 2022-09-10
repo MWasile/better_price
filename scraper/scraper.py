@@ -1,4 +1,5 @@
 import difflib
+import re
 import sys
 import requests
 from bs4 import BeautifulSoup
@@ -15,7 +16,7 @@ class ScrapEngine:
 
     def __init__(self, task):
         self.task = task
-        self.response_data = str
+        self.response_data = []
         self.match_settings = 0.80
 
     def scrap_request(self, db_save=True):
@@ -57,11 +58,33 @@ class ScrapEngine:
                         'author': ebook.select_one(self.task.EBOOK_DETAIL['author']).getText(),
                         'price': ebook.select_one(self.task.EBOOK_DETAIL['price']).getText()
                     })
+                    # only one result from bookstores
+                    break
 
         if db_save:
             self.task.data_auto_save = prettify_response_data
 
         return prettify_response_data
+
+    def email_result(self, user_price):
+
+        result = []
+
+        for ebook in self.response_data:
+            if 'price' in ebook:
+                try:
+                    web_price = ebook['price'].replace(",", '.')
+                    web_price = web_price[:re.search(r'[a-zA-Z]', ebook['price']).start()]
+                    if float(web_price) <= user_price:
+                        result.append(ebook)
+
+                except Exception as err:
+                    print(err)
+
+        if not result:
+            return False
+
+        return result
 
 
 class Task:
@@ -188,6 +211,22 @@ class TaskManager(TaskFactory):
         for task in self.tasks:
             scrap = ScrapEngine(task)
             scrap.scrap_request()
+
+    def run_email_tasks(self, user_prince):
+
+        ebooks_price_lower = []
+
+        for task in self.tasks:
+            scrap = ScrapEngine(task)
+            scrap.scrap_request(db_save=False)
+            email_results = scrap.email_result(user_prince)
+
+            if email_results:
+                ebooks_price_lower.append(email_results)
+
+        if not ebooks_price_lower:
+            return False
+        return ebooks_price_lower
 
 
 class Woblink:
