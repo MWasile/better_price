@@ -15,10 +15,10 @@ class ScrapEngine:
 
     def __init__(self, task):
         self.task = task
-        self.response_raw_data = ''
+        self.response_data = str
         self.match_settings = 0.80
 
-    def scrap_request(self):
+    def scrap_request(self, db_save=True):
         try:
             r = requests.get(self.task.url)
         except requests.exceptions.RequestException as err:
@@ -26,7 +26,7 @@ class ScrapEngine:
             return False
 
         if 300 > r.status_code >= 200:
-            self.response_raw_data = r.content
+            self.response_data = self._prettify_response(r.content, db_save)
             return True
 
         return False
@@ -36,24 +36,32 @@ class ScrapEngine:
             return False
         return True
 
-    def prettify_response(self):
-        if not self.response_raw_data:
+    def _prettify_response(self, raw_data, db_save=True):
+        if not raw_data:
             return False
 
-        tag_soup = BeautifulSoup(self.response_raw_data, 'lxml')
+        tag_soup = BeautifulSoup(raw_data, 'lxml')
+        prettify_response_data = []
 
         ebook_main_container = tag_soup.select_one(self.task.ALL_EBOOK_CONTAINER)
-        available_ebooks = ebook_main_container.select(self.task.EBOOK_CONTAINER)
 
-        for ebook in available_ebooks:
-            title = ebook.select_one(self.task.EBOOK_DETAIL['title'])
+        if ebook_main_container:
+            available_ebooks = ebook_main_container.select(self.task.EBOOK_CONTAINER)
 
-            if title and self.is_match(title.getText(), self.task.user_input):
-                self.task.data_auto_save = {
-                    'title': title.getText(),
-                    'author': ebook.select_one(self.task.EBOOK_DETAIL['author']).getText(),
-                    'price': ebook.select_one(self.task.EBOOK_DETAIL['price']).getText()
-                }
+            for ebook in available_ebooks:
+                title = ebook.select_one(self.task.EBOOK_DETAIL['title'])
+
+                if title and self.is_match(title.getText(), self.task.user_input):
+                    prettify_response_data.append({
+                        'title': title.getText(),
+                        'author': ebook.select_one(self.task.EBOOK_DETAIL['author']).getText(),
+                        'price': ebook.select_one(self.task.EBOOK_DETAIL['price']).getText()
+                    })
+
+        if db_save:
+            self.task.data_auto_save = prettify_response_data
+
+        return prettify_response_data
 
 
 class Task:
@@ -179,8 +187,7 @@ class TaskManager(TaskFactory):
     def run_tasks(self):
         for task in self.tasks:
             scrap = ScrapEngine(task)
-            if scrap.scrap_request():
-                scrap.prettify_response()
+            scrap.scrap_request()
 
 
 class Woblink:
