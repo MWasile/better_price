@@ -1,4 +1,5 @@
 import sys
+import requests
 
 from django.core.exceptions import ValidationError
 from django.db import DatabaseError, IntegrityError, DataError
@@ -17,7 +18,21 @@ class ScrapEngine:
         5. Detail scrap (email alert) / PARAMS: Task obj
         6. Check result from site match user input -> difflib.SequenceMatcher
     """
-    pass
+
+    def __init__(self):
+        self.response_raw_data = str
+
+    def scrap_request(self):
+        try:
+            r = requests.get(self.url)
+        except requests.exceptions.RequestException as err:
+            return False
+
+        if 300 > r.status_code >= 200:
+            self.response_raw_data = r.content
+            return True
+
+        return False
 
 
 class Task:
@@ -46,7 +61,7 @@ class Task:
     def data_auto_save(self, data_from_scrap):
         own_save = self._db_save(data_from_scrap)
         if own_save:
-            self._data_auto_save=data_from_scrap
+            self._data_auto_save = data_from_scrap
 
     def _db_save(self, data_to_save):
         new_scrap_task = ScrapTask(
