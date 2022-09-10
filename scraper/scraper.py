@@ -191,23 +191,6 @@ class TaskManager(TaskFactory):
 
 
 class Woblink:
-    """
-    TODO:
-        core setup:
-        BOOKSTORE_URL               DONE
-        qs -> main ebook container  DONE
-        qs -> one ebook container   DONE
-        dict -> ebook detai {       NOT YET
-                'author':           DONE
-                'title':            DONE
-                'price':            DONE
-                'url':              NOT YET
-                'url image?'        NOT YET
-                            }
-        method:
-        1. get_url -> add %20 or sth else to url+userinput DONE
-    """
-
     BOOKSTORE_URL = 'https://woblink.com/katalog/ebooki?szukasz='
     ALL_EBOOK_CONTAINER = 'ul.catalog-items.lista'
     EBOOK_CONTAINER = 'div [data-item-layout="tiles"]'
@@ -219,7 +202,6 @@ class Woblink:
     }
 
     def __init__(self, user_input):
-        super().__init__()
         self.user_input = user_input
         self.url = self.get_url()
 
@@ -230,8 +212,21 @@ class Woblink:
 
 
 class Empik:
-    BOOKSTORE_URL = 'XDDDD'
+    BOOKSTORE_URL = 'https://www.empik.com/audiobooki-i-ebooki,35,s?q='
+    ALL_EBOOK_CONTAINER = 'div.container.search-results.js-search-results'
+    EBOOK_CONTAINER = 'div.search-list-item'
+    EBOOK_DETAIL = {
+        'author': 'a.smartAuthor',
+        'title': '.ta-product-title',
+        'price': '.price.ta-price-tile',
+        # TODO direclink, url_image
+    }
 
     def __init__(self, user_input):
         self.user_input = user_input
-        self.url = 'XD'
+        self.url = self.get_url()
+
+    def get_url(self):
+        if len(self.user_input.split()) < 2:
+            return ''.join([self.BOOKSTORE_URL, self.user_input])
+        return ''.join([self.BOOKSTORE_URL, '%20'.join(self.user_input.split())])
