@@ -123,18 +123,31 @@ class TaskFactory:
 class TaskManager(TaskFactory):
 
     def __init__(self, task_type, user_input_search, email=None, price=None):
-        self.task_type = task_type
         self.user_input_search = user_input_search
         self.emial_case = (email, price)
+        self.task_type = self._type_validation(task_type)
         self.model_id = self._create_task_model()
         self.tasks = self._pin_tasks()
+
+    def _type_validation(self, input_task_type):
+        if input_task_type not in ['ScrapyTask', 'EmailTask']:
+            raise ValueError(f'task_type must be "ScrapyTask" or "EmailTask", not {self.task_type}')
+
+        if input_task_type == 'EmailTask':
+            if not self.emial_case[0]:
+                raise ValueError('In EmailTask, parameter email is required.')
+            elif not self.emial_case[1]:
+                raise ValueError('In EmailTask, parameter price is required.')
+
+        if input_task_type == 'ScrapyTask':
+            if self.emial_case[0]:
+                raise ValueError('ScrapyTask allowed only task_type and user_input_search parameters.')
+
+        return input_task_type
 
     def _create_task_model(self):
         if not self.user_input_search:
             raise ValueError('User input is required as parameter. Cannot be empty string.')
-
-        if self.task_type not in ['ScrapyTask', 'EmailTask']:
-            raise ValueError(f'task_type must be "ScrapyTask" or "EmailTask", not {self.task_type}')
 
         try:
             new_task_model = TaskWorkInfo.objects.create(
@@ -148,6 +161,7 @@ class TaskManager(TaskFactory):
         return new_task_model.id
 
     def _pin_tasks(self):
+        # escape when task_type = mail
         if self.emial_case[0]:
             return True
 
