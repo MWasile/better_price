@@ -1,5 +1,6 @@
 import sys
 
+from django.core.exceptions import ValidationError
 from django.db import DatabaseError, IntegrityError, DataError
 
 from config import settings
@@ -42,20 +43,23 @@ class Task:
         return self._data_auto_save
 
     @data_auto_save.setter
-    def data_auto_save(self, scrap_data):
-        pass
+    def data_auto_save(self, data_from_scrap):
+        own_save = self._db_save(data_from_scrap)
+        if own_save:
+            self._data_auto_save=data_from_scrap
 
-    def db_save(self):
-
+    def _db_save(self, data_to_save):
         new_scrap_task = ScrapTask(
-            owner_task=self.owner_model_id,
-            data=self._data_auto_save
+            owner_task_id=self.owner_model_id,
+            data=data_to_save
         )
 
         try:
             new_scrap_task.full_clean()
-        except:
-            pass
+            new_scrap_task.save()
+        except ValidationError:
+            return False
+        return True
 
 
 class TaskFactory:
@@ -107,10 +111,10 @@ class TaskManager(TaskFactory):
         super().__init__()
         self.user_input_search = user_input_search
         self.task_type = task_type
-        self.model_id = self.create_task_model()
-        self.tasks = self.pin_tasks()
+        self.model_id = self._create_task_model()
+        self.tasks = self._pin_tasks()
 
-    def create_task_model(self):
+    def _create_task_model(self):
         if not self.user_input_search:
             raise ValueError('User input is required as parameter. Cannot be empty string.')
 
@@ -126,7 +130,7 @@ class TaskManager(TaskFactory):
             raise err
         return new_task_model.id
 
-    def pin_tasks(self):
+    def _pin_tasks(self):
         try:
             new_tasks = self.create_task_istance(
                 task_type=self.task_type,
