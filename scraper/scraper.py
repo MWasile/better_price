@@ -13,6 +13,11 @@ from scraper.models import ScrapTask
 
 
 class ScrapEngine:
+    """
+    This class need ScrapyTask/EmailTask class object as parameter to propertly work. Does everything
+    around scraping websites.
+
+    """
 
     def __init__(self, task):
         self.task = task
@@ -20,6 +25,15 @@ class ScrapEngine:
         self.match_settings = 0.80
 
     def scrap_request(self, db_save=True):
+        """
+        Making request. Based on ScrapyTask/EmailTask url properties. Uses prettify_response to set response data.
+
+        :param db_save: if false, then task not save to db. Useful for email price alert.
+        :return:
+            False -> on connection erros / status_code bad results
+            True
+        """
+        # TODO: Fakeuseragent / proxy
         try:
             r = requests.get(self.task.url)
         except requests.exceptions.RequestException as err:
@@ -33,11 +47,28 @@ class ScrapEngine:
         return False
 
     def is_match(self, arg1, arg2):
+        """
+        For compare website ebook title and user input.
+        :return:
+            False
+            True
+        """
         if not difflib.SequenceMatcher(None, arg1, arg2).ratio() > self.match_settings:
             return False
         return True
 
     def _prettify_response(self, raw_data, db_save=True):
+        """
+        Scraping data from response, it searches the e-book container in the main containers and
+        then searches the e-book details. Querrysets from ScrapTask/Email objects.
+        Exiting on first positive is_match result. Set result in response_data
+
+        :param raw_data: response raw data.
+        :param db_save: if false, then task not save to db.
+        :return:
+            prettify_response_data:
+            false:
+        """
         if not raw_data:
             return False
 
@@ -67,6 +98,12 @@ class ScrapEngine:
         return prettify_response_data
 
     def email_result(self, user_price):
+        """
+        Compares alert price with scraped data. If e-book price less or equal to it then returns data.
+
+        :param user_price: alert price
+        :return:
+        """
 
         result = []
 
@@ -88,6 +125,11 @@ class ScrapEngine:
 
 
 class Task:
+    """
+    Class base used in TaskFactory to mixin with other bookstores class. Together with bookstores class inheritance
+    making ScrapyTask/EmailTask class. Can't be used alone.
+    Mainly for stored data from websites. Takes user input and core task model id for properly autosave.
+    """
 
     def __init__(self, user_input, owner_model_id):
         super().__init__(user_input)
@@ -119,6 +161,9 @@ class Task:
 
 
 class TaskFactory:
+    """
+    For each bookstores in config, creating mix-class(task/bookstore) named ScrapedTask/EmailTask.
+    """
 
     @staticmethod
     def create_task_istance(*, task_type, user_input, owner_model_id):
@@ -152,6 +197,17 @@ class TaskFactory:
 
 
 class TaskManager(TaskFactory):
+    """
+    Easy scraping manager. For each scraping job, they need to be created. In innit creating table in databases and
+    ready to use ScrapTask/EmailTask objects.
+
+    Core function is run_task, who run async task and save it result to realated models.
+    Second core function is run_email_tasks, which checks for lower price than user alert, if he hits then return scrap
+    data ready to send emails.
+
+    Task type can be only ScrapyTask or EmailTask.
+
+    """
 
     def __init__(self, task_type, user_input_search, email=None, price=None):
         self.user_input_search = user_input_search
