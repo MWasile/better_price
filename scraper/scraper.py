@@ -7,19 +7,11 @@ from django.core.exceptions import ValidationError
 from django.db import DatabaseError, IntegrityError, DataError
 
 from config import settings
-from scraper.models import Task as modelTask, ScrapTask
+from scraper.models import TaskWorkInfo
+from scraper.models import ScrapTask
 
 
 class ScrapEngine:
-    """
-    TODO:
-        1. Erorr handler?
-        2. Do Request -> local ip / PARAMS: Task obj
-        3. Do Request -> proxy / fake user agent / PARAMS: Task obj
-        4. Extract data -> bs4 /
-        5. Detail scrap (email alert) / PARAMS: Task obj
-        6. Check result from site match user input -> difflib.SequenceMatcher
-    """
 
     def __init__(self, task):
         self.task = task
@@ -65,17 +57,6 @@ class ScrapEngine:
 
 
 class Task:
-    """
-    TODO:
-        1. db self save?
-        2. data class?
-        Params:
-        task_id: int?
-        main_task_id -> model create in ScrapTaskFactory (!!!contnttype!!!)
-        task_keyword: str
-        status_flag: Boolean
-        data_from_site: dict
-    """
 
     def __init__(self, user_input, owner_model_id):
         super().__init__(user_input)
@@ -107,11 +88,6 @@ class Task:
 
 
 class TaskFactory:
-    """
-    TODO:
-        1. Make class instance TASK with inh bookstores / email too
-        2. Import bookstore setup from django.config -> errors?
-    """
 
     @staticmethod
     def create_task_istance(*, task_type, user_input, owner_model_id):
@@ -145,15 +121,11 @@ class TaskFactory:
 
 
 class TaskManager(TaskFactory):
-    """
-    TODO:
-        1. Create task for all available bookstores
-        2. Create model to agregate contentype relatons?
-    """
 
-    def __init__(self, task_type, user_input_search):
-        self.user_input_search = user_input_search
+    def __init__(self, task_type, user_input_search, email=None, price=None):
         self.task_type = task_type
+        self.user_input_search = user_input_search
+        self.emial_case = (email, price)
         self.model_id = self._create_task_model()
         self.tasks = self._pin_tasks()
 
@@ -161,19 +133,24 @@ class TaskManager(TaskFactory):
         if not self.user_input_search:
             raise ValueError('User input is required as parameter. Cannot be empty string.')
 
-        if self.task_type.lower() not in ['emailtask', 'scrapytask']:
+        if self.task_type not in ['ScrapyTask', 'EmailTask']:
             raise ValueError(f'task_type must be "ScrapyTask" or "EmailTask", not {self.task_type}')
 
         try:
-            new_task_model = modelTask.objects.create(
+            new_task_model = TaskWorkInfo.objects.create(
                 task_type=self.task_type,
-                search_key=self.user_input_search
+                search_key=self.user_input_search,
+                email=self.emial_case[0],
+                price=self.emial_case[1],
             )
         except (TypeError, DatabaseError, IntegrityError, DataError) as err:
             raise err
         return new_task_model.id
 
     def _pin_tasks(self):
+        if self.emial_case[0]:
+            return True
+
         try:
             new_tasks = self.create_task_istance(
                 task_type=self.task_type,
