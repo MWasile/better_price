@@ -1,3 +1,4 @@
+import difflib
 import sys
 import requests
 
@@ -21,11 +22,13 @@ class ScrapEngine:
 
     def __init__(self):
         self.response_raw_data = str
+        self.match_settings = 0.80
 
     def scrap_request(self):
         try:
             r = requests.get(self.url)
         except requests.exceptions.RequestException as err:
+            # TODO: errors logs?
             return False
 
         if 300 > r.status_code >= 200:
@@ -33,6 +36,11 @@ class ScrapEngine:
             return True
 
         return False
+
+    def is_match(self, arg1, arg2):
+        if not difflib.SequenceMatcher(None, arg1, arg2).ratio() > self.match_settings:
+            return False
+        return True
 
 
 class Task:
