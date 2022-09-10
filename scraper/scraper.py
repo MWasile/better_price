@@ -1,6 +1,7 @@
 import difflib
 import sys
 import requests
+from bs4 import BeautifulSoup
 
 from django.core.exceptions import ValidationError
 from django.db import DatabaseError, IntegrityError, DataError
@@ -20,15 +21,16 @@ class ScrapEngine:
         6. Check result from site match user input -> difflib.SequenceMatcher
     """
 
-    def __init__(self):
-        self.response_raw_data = str
+    def __init__(self, task):
+        self.task = task
+        self.response_raw_data = ''
         self.match_settings = 0.80
 
     def scrap_request(self):
         try:
-            r = requests.get(self.url)
+            r = requests.get(self.task.url)
         except requests.exceptions.RequestException as err:
-            # TODO: errors logs?
+            # TODO: errors logs? no raise
             return False
 
         if 300 > r.status_code >= 200:
@@ -41,6 +43,25 @@ class ScrapEngine:
         if not difflib.SequenceMatcher(None, arg1, arg2).ratio() > self.match_settings:
             return False
         return True
+
+    def prettify_response(self):
+        if not self.response_raw_data:
+            return False
+
+        tag_soup = BeautifulSoup(self.response_raw_data, 'lxml')
+
+        ebook_main_container = tag_soup.select_one(self.task.ALL_EBOOK_CONTAINER)
+        available_ebooks = ebook_main_container.select(self.task.EBOOK_CONTAINER)
+
+        for ebook in available_ebooks:
+            title = ebook.select_one(self.task.EBOOK_DETAIL['title'])
+
+            if title and self.is_match(title.getText(), self.task.user_input):
+                self.task.data_auto_save = {
+                    'title': title.getText(),
+                    'author': ebook.select_one(self.task.EBOOK_DETAIL['author']).getText(),
+                    'price': ebook.select_one(self.task.EBOOK_DETAIL['price']).getText()
+                }
 
 
 class Task:
@@ -131,7 +152,6 @@ class TaskManager(TaskFactory):
     """
 
     def __init__(self, task_type, user_input_search):
-        super().__init__()
         self.user_input_search = user_input_search
         self.task_type = task_type
         self.model_id = self._create_task_model()
@@ -165,8 +185,14 @@ class TaskManager(TaskFactory):
             raise err
         return new_tasks
 
+    def run_tasks(self):
+        for task in self.tasks:
+            scrap = ScrapEngine(task)
+            if scrap.scrap_request():
+                scrap.prettify_response()
 
-class Woblink(ScrapEngine):
+
+class Woblink:
     """
     TODO:
         core setup:
@@ -205,7 +231,7 @@ class Woblink(ScrapEngine):
         return ''.join([self.BOOKSTORE_URL, '+'.join(self.user_input.split())])
 
 
-class Empik(ScrapEngine):
+class Empik:
     BOOKSTORE_URL = 'XDDDD'
 
     def __init__(self, user_input):
