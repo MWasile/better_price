@@ -1,16 +1,16 @@
 import decimal
 import difflib
-import re
 import sys
 from decimal import Decimal
-
 import requests
 from bs4 import BeautifulSoup
+from django.contrib.contenttypes.models import ContentType
 
 from scraper.models import FastTaskInfo, ScrapResult, EmailTaskInfo
 from django.core.exceptions import ValidationError
-
 from config import settings
+
+from api.tasks import fast_scrap_task
 
 
 class ScrapEnginge:
@@ -78,9 +78,12 @@ class Task(ScrapEnginge):
 
     def _db_save(self, data_to_save):
 
+        ct = ContentType.objects.get(app_label='scraper', model='emailtaskinfo')
+
         new_model = ScrapResult(
             data=data_to_save,
-            content_object=self.owner_model
+            content_type=ct,
+            object_id=self.owner_model[0]
         )
         new_model.save()
         return True
@@ -123,10 +126,9 @@ class EmailScrapMixin:
         web_price = ''.join(char for char in web_price if char.isdigit() or char == '.')
 
         try:
-            if Decimal(web_price) < self.owner_model.price:
-                self.owner_model.status = False
-                return ebook_detail
-            return False
+            if Decimal(web_price) > Decimal(self.owner_model[1]):
+                self.data_auto_save, = ebook_detail
+            return True
         except decimal.InvalidOperation:
             return False
 
@@ -156,9 +158,9 @@ class TaskFactory:
 
 class TaskManager(TaskFactory):
 
-    def __init__(self, scrap_type, user_ebook, email_case_model=None):
+    def __init__(self, scrap_type, user_ebook, email_case_model=None, user_price_alert=None):
         self.user_ebook = user_ebook
-        self.email_case = email_case_model
+        self.email_case = (email_case_model, user_price_alert)
         self.scrap_type = self._own_type(scrap_type)
         self.scrap_model = self._pin_model()
         self.tasks = self._pin_task()
@@ -194,7 +196,7 @@ class TaskManager(TaskFactory):
         except ValidationError:
             return None
 
-        return new_info_model
+        return new_info_model.id
 
     def _pin_task(self):
         if self.scrap_type == 'fast':
@@ -202,16 +204,16 @@ class TaskManager(TaskFactory):
         else:
             mixin_type = 'EmailScrapMixin'
 
-        try:
-            tasks = self.create_task_istance(mixin_type, self.user_ebook, self.scrap_model)
-        except (AttributeError, ValueError) as err:
-            print(err)
-            return None
-        return tasks
+        celery_json = {
+            'type': mixin_type,
+            'user_ebook': self.user_ebook,
+            'scrap_model': self.scrap_model
+        }
+
+        return celery_json
 
     def run_celery_task(self):
-        # TODO: pass all tasks to celery worker
-        return '?'
+        fast_scrap_task.apply_async([self.tasks])
 
     @classmethod
     def create_email_task(cls, user_ebook, email, price):
