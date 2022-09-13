@@ -58,14 +58,32 @@ class TaskManager(TaskFactory):
         self.scrap_model = self._pin_model()
         self.tasks = self._pin_task()
 
-    def _own_type(self, user_scrap_type):
-        # TODO: validates user input / set type
+    def _own_type(self, user_input_type):
+
+        if user_input_type.lower() not in ['email', 'fast']:
+            raise ValueError(f'task_type must be "email" or "fast", not {user_input_type}')
+
+        if user_input_type.lower() == 'email':
+            if not self.email_case['email']:
+                raise ValueError('In email task, parameter user_email is required.')
+            if not self.email_case['price']:
+                raise ValueError('In email task, parameter user_price is required.')
+            if not self.email_case['model_id']:
+                raise ValueError('In email task, parameter email_case_model_id is required.')
+            return user_input_type
+
+        return user_input_type
+
+
         return user_scrap_type
 
     def _pin_model(self):
         if self.email_case['model_id']:
             # Task Email already has model created before, so escape.
             return self.email_case['model_id']
+
+        if not self.user_ebook:
+            return None
 
         new_info_model = FastTaskInfo(
             task_type=self.scrap_type,
