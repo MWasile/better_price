@@ -123,8 +123,7 @@ class EmailScrapMixin:
         web_price = ''.join(char for char in web_price if char.isdigit() or char == '.')
 
         try:
-            decimal_web_price = Decimal(web_price)
-            if decimal_web_price < self.owner_model.price:
+            if Decimal(web_price) < self.owner_model.price:
                 self.owner_model.status = False
                 return ebook_detail
             return False
@@ -228,7 +227,7 @@ class TaskManager(TaskFactory):
             new_email_task.save()
         except ValidationError:
             return False
-        return True
+        return new_email_task
 
 
 class Woblink:
