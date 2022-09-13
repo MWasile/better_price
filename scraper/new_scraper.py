@@ -118,8 +118,11 @@ class TaskManager(TaskFactory):
         return new_info_model.id
 
     def _pin_task(self):
-        # TODO: Create list with task class object
-        return '[classTaskObj]'
+        try:
+            tasks = self.create_task_istance(self.scrap_type, self.user_ebook, self.scrap_model)
+        except (AttributeError, ValueError):
+            return None
+        return tasks
 
     def run_task(self):
         # TODO: pass all tasks to celery worker
