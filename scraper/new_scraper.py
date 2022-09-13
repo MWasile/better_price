@@ -1,10 +1,13 @@
+import decimal
 import difflib
+import re
 import sys
+from decimal import Decimal
 
 import requests
 from bs4 import BeautifulSoup
 
-from scraper.models import FastTaskInfo, ScrapResult
+from scraper.models import FastTaskInfo, ScrapResult, EmailTaskInfo
 from django.core.exceptions import ValidationError
 
 from config import settings
@@ -46,7 +49,7 @@ class ScrapEnginge:
                     prettify_response_data.append({
                         'title': title.getText(),
                         'author': ebook.select_one(self.EBOOK_DETAIL['author']).getText(),
-                        'price': ebook.select_one(self.EBOOK_DETAIL['price']).getText()
+                        'price': ebook.select_one(self.EBOOK_DETAIL['price']).find(text=True, recursive=False).getText()
                     })
                     # only one result from bookstores
                     return prettify_response_data
@@ -101,12 +104,32 @@ class FastScrapMixin:
 
 
 class EmailScrapMixin:
-    # inh -> (Task, BookstoreClass)
-    # format price str -> , . zł
-    # compare web price - user pirce
-    # overwrite
-    pass
+    def scrap(self):
+        raw_site_data = self.scrap_request()
 
+        if not raw_site_data:
+            return False
+
+        ebook_detail = self.prettify_response(raw_site_data)
+
+        if not ebook_detail:
+            return False
+
+        web_price = ebook_detail[0]['price']
+
+        if web_price.find(',') != -1:
+            web_price = web_price.replace(',', '.')
+
+        web_price = ''.join(char for char in web_price if char.isdigit() or char == '.')
+
+        try:
+            decimal_web_price = Decimal(web_price)
+            if decimal_web_price < self.owner_model.price:
+                self.owner_model.status = False
+                return ebook_detail
+            return False
+        except decimal.InvalidOperation:
+            return False
 
 
 class TaskFactory:
@@ -133,16 +156,10 @@ class TaskFactory:
 
 
 class TaskManager(TaskFactory):
-    """
-    ONLY!!!!:
-        1. Run fast scrap
-        2. Run fast scrap based on earlier set email task
-        3. Set email task without instant scrap
-    """
 
-    def __init__(self, scrap_type, user_ebook, user_email=None, user_price=None, email_case_model_id=None):
+    def __init__(self, scrap_type, user_ebook, email_case_model=None):
         self.user_ebook = user_ebook
-        self.email_case = {'email': user_email, 'price': user_price, 'model_id': email_case_model_id}
+        self.email_case = email_case_model
         self.scrap_type = self._own_type(scrap_type)
         self.scrap_model = self._pin_model()
         self.tasks = self._pin_task()
@@ -153,20 +170,16 @@ class TaskManager(TaskFactory):
             raise ValueError(f'task_type must be "email" or "fast", not {user_input_type}')
 
         if user_input_type.lower() == 'email':
-            if not self.email_case['email']:
-                raise ValueError('In email task, parameter user_email is required.')
-            if not self.email_case['price']:
-                raise ValueError('In email task, parameter user_price is required.')
-            if not self.email_case['model_id']:
-                raise ValueError('In email task, parameter email_case_model_id is required.')
+            if not self.email_case:
+                raise ValueError('In email task, parameter email_case_mode is required.')
             return user_input_type
 
         return user_input_type
 
     def _pin_model(self):
-        if self.email_case['model_id']:
+        if self.email_case:
             # Task Email already has model created before, so escape.
-            return self.email_case['model_id']
+            return self.email_case
 
         if not self.user_ebook:
             return None
@@ -202,8 +215,20 @@ class TaskManager(TaskFactory):
         return '?'
 
     @classmethod
-    def create_email_task(cls):
-        return 'model_id'
+    def create_email_task(cls, user_ebook, email, price):
+        new_email_task = EmailTaskInfo(
+            task_type='email',
+            user_ebook=user_ebook,
+            email=email,
+            price=price
+        )
+
+        try:
+            new_email_task.full_clean()
+            new_email_task.save()
+        except ValidationError:
+            return False
+        return True
 
 
 class Woblink:
