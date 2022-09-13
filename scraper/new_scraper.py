@@ -1,18 +1,64 @@
+import difflib
 import sys
 
-# from scraper.models import FastTaskInfo, EmailTaskInfo
-# from django.core.exceptions import ValidationError
+import requests
+from bs4 import BeautifulSoup
+
+from scraper.models import FastTaskInfo, ScrapResult
+from django.core.exceptions import ValidationError
 
 from config import settings
 
 
-class Task:
-    def __init__(self, user_ebook, owner_model_id):
+class ScrapEnginge:
+    MATCH_SETTINGS = 0.80
+
+    def scrap_request(self):
+        try:
+            r = requests.get(self.url)
+        except requests.exceptions.RequestException:
+            return False
+
+        if r.status_code == 200:
+            return r.content
+
+        return False
+
+    def is_match(self, arg1, arg2):
+        if not difflib.SequenceMatcher(None, arg1, arg2).ratio() > self.MATCH_SETTINGS:
+            return False
+        return True
+
+    def prettify_response(self, raw_data):
+
+        tag_soup = BeautifulSoup(raw_data, 'lxml')
+        prettify_response_data = []
+
+        ebook_main_container = tag_soup.select_one(self.ALL_EBOOK_CONTAINER)
+
+        if ebook_main_container:
+            available_ebooks = ebook_main_container.select(self.EBOOK_CONTAINER)
+
+            for ebook in available_ebooks:
+                title = ebook.select_one(self.EBOOK_DETAIL['title'])
+
+                if title and self.is_match(title.getText(), self.user_ebook):
+                    prettify_response_data.append({
+                        'title': title.getText(),
+                        'author': ebook.select_one(self.EBOOK_DETAIL['author']).getText(),
+                        'price': ebook.select_one(self.EBOOK_DETAIL['price']).getText()
+                    })
+                    # only one result from bookstores
+                    return prettify_response_data
+        return False
+
+
+class Task(ScrapEnginge):
+    def __init__(self, user_ebook, owner_model):
         super().__init__(user_ebook)
         self.user_ebook = user_ebook
-        self.owner_model_id = owner_model_id
-        self.web_data = {}  #
-        self.data_auto_save = {}
+        self.owner_model = owner_model
+        self._data_auto_save = []
 
     @property
     def data_auto_save(self):
@@ -21,17 +67,37 @@ class Task:
     @data_auto_save.setter
     def data_auto_save(self, data_from_website):
         own_save = self._db_save(data_from_website)
+
         if own_save:
             self._data_auto_save = data_from_website
+        else:
+            self._data_auto_save = None
 
     def _db_save(self, data_to_save):
-        # TODO: save to db, reorganize models
+
+        new_model = ScrapResult(
+            data=data_to_save,
+            content_object=self.owner_model
+        )
+        new_model.save()
         return True
 
 
 class FastScrapMixin:
-    # inh -> (Task, BookstoreClass)
-    # nothing else?
+    def scrap(self):
+        raw_site_data = self.scrap_request()
+
+        if not raw_site_data:
+            return False
+
+        ebook_detail = self.prettify_response(raw_site_data)
+
+        if not ebook_detail:
+            return False
+
+        self.data_auto_save = ebook_detail
+
+        return ebook_detail
 
 
 class EmailScrapMixin:
@@ -40,6 +106,7 @@ class EmailScrapMixin:
     # compare web price - user pirce
     # overwrite
     pass
+
 
 
 class TaskFactory:
@@ -115,27 +182,28 @@ class TaskManager(TaskFactory):
         except ValidationError:
             return None
 
-        return new_info_model.id
+        return new_info_model
 
     def _pin_task(self):
+        if self.scrap_type == 'fast':
+            mixin_type = 'FastScrapMixin'
+        else:
+            mixin_type = 'EmailScrapMixin'
+
         try:
-            tasks = self.create_task_istance(self.scrap_type, self.user_ebook, self.scrap_model)
-        except (AttributeError, ValueError):
+            tasks = self.create_task_istance(mixin_type, self.user_ebook, self.scrap_model)
+        except (AttributeError, ValueError) as err:
+            print(err)
             return None
         return tasks
 
-    def run_task(self):
+    def run_celery_task(self):
         # TODO: pass all tasks to celery worker
         return '?'
 
     @classmethod
     def create_email_task(cls):
         return 'model_id'
-
-
-class ScrapEnginge:
-    # like v1
-    pass
 
 
 class Woblink:
@@ -178,6 +246,3 @@ class Empik:
         if len(self.user_input.split()) < 2:
             return ''.join([self.BOOKSTORE_URL, self.user_input])
         return ''.join([self.BOOKSTORE_URL, '%20'.join(self.user_input.split())])
-
-
-
