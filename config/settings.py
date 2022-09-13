@@ -164,5 +164,20 @@ CELERY_BEAT_SCHEDULE = {
             'queue': 'email_queue',
         },
     },
+    'email_send': {
+        'task': 'api.tasks.email_send',
+        'schedule': 120.0,
+        'options': {
+            'expires': 10,
+            'queue': 'email_queue',
+        },
+    },
 }
+
+# SCRAPER CONFIG
+
+SCRAPER_BOOKSTORES = [
+    'Woblink',
+    'Empik'
+]
 
