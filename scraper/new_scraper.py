@@ -1,9 +1,14 @@
-from scraper.models import FastTaskInfo, EmailTaskInfo
-from django.core.exceptions import ValidationError
+import sys
+
+# from scraper.models import FastTaskInfo, EmailTaskInfo
+# from django.core.exceptions import ValidationError
+
+from config import settings
 
 
 class Task:
     def __init__(self, user_ebook, owner_model_id):
+        super().__init__(user_ebook)
         self.user_ebook = user_ebook
         self.owner_model_id = owner_model_id
         self.web_data = {}  #
@@ -27,7 +32,6 @@ class Task:
 class FastScrapMixin:
     # inh -> (Task, BookstoreClass)
     # nothing else?
-    pass
 
 
 class EmailScrapMixin:
@@ -39,8 +43,26 @@ class EmailScrapMixin:
 
 
 class TaskFactory:
-    # like v1
-    pass
+    @classmethod
+    def create_task_istance(cls, mixin_name, user_ebook, owner_model_id):
+        try:
+            bookstore_settings = settings.SCRAPER_BOOKSTORES
+        except AttributeError:
+            raise ImportError("SCRAPER_BOOKSTORES must be specified in django settings.")
+
+        if not bookstore_settings:
+            raise ValueError(f'Bookstores class name must be specified in SCRAPER_BOOKSTORES')
+
+        choosen_mixin = getattr(sys.modules[__name__], mixin_name)
+
+        inheritances = tuple(
+            (Task, choosen_mixin, getattr(sys.modules[__name__], import_name)) for import_name in bookstore_settings)
+
+        task_base = [type(mixin_name, inheritance, {}) for inheritance in inheritances]
+
+        tasks = [mix_class(user_ebook, owner_model_id) for mix_class in task_base]
+
+        return tasks
 
 
 class TaskManager(TaskFactory):
@@ -153,3 +175,6 @@ class Empik:
         if len(self.user_input.split()) < 2:
             return ''.join([self.BOOKSTORE_URL, self.user_input])
         return ''.join([self.BOOKSTORE_URL, '%20'.join(self.user_input.split())])
+
+
+
