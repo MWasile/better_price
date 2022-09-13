@@ -1,6 +1,7 @@
 from scraper.models import FastTaskInfo, EmailTaskInfo
 from django.core.exceptions import ValidationError
 
+
 class Task:
     def __init__(self, user_ebook, owner_model_id):
         self.user_ebook = user_ebook
@@ -34,7 +35,6 @@ class EmailScrapMixin:
     # format price str -> , . zł
     # compare web price - user pirce
     # overwrite
-
     pass
 
 
@@ -74,9 +74,6 @@ class TaskManager(TaskFactory):
 
         return user_input_type
 
-
-        return user_scrap_type
-
     def _pin_model(self):
         if self.email_case['model_id']:
             # Task Email already has model created before, so escape.
@@ -114,3 +111,45 @@ class TaskManager(TaskFactory):
 class ScrapEnginge:
     # like v1
     pass
+
+
+class Woblink:
+    BOOKSTORE_URL = 'https://woblink.com/katalog/ebooki?szukasz='
+    ALL_EBOOK_CONTAINER = 'ul.catalog-items.lista'
+    EBOOK_CONTAINER = 'div [data-item-layout="tiles"]'
+    EBOOK_DETAIL = {
+        'author': 'p.catalog-tile__author a',
+        'title': 'a.catalog-tile__title span',
+        'price': 'p.catalog-tile__new-price span',
+        # TODO direclink, url_image
+    }
+
+    def __init__(self, user_input):
+        self.user_input = user_input
+        self.url = self.get_url()
+
+    def get_url(self):
+        if len(self.user_input.split()) < 2:
+            return ''.join([self.BOOKSTORE_URL, self.user_input])
+        return ''.join([self.BOOKSTORE_URL, '+'.join(self.user_input.split())])
+
+
+class Empik:
+    BOOKSTORE_URL = 'https://www.empik.com/audiobooki-i-ebooki,35,s?q='
+    ALL_EBOOK_CONTAINER = 'div.container.search-results.js-search-results'
+    EBOOK_CONTAINER = 'div.search-list-item'
+    EBOOK_DETAIL = {
+        'author': 'a.smartAuthor',
+        'title': '.ta-product-title',
+        'price': '.price.ta-price-tile',
+        # TODO direclink, url_image
+    }
+
+    def __init__(self, user_input):
+        self.user_input = user_input
+        self.url = self.get_url()
+
+    def get_url(self):
+        if len(self.user_input.split()) < 2:
+            return ''.join([self.BOOKSTORE_URL, self.user_input])
+        return ''.join([self.BOOKSTORE_URL, '%20'.join(self.user_input.split())])
