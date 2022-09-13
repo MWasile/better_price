@@ -1,3 +1,6 @@
+from scraper.models import FastTaskInfo, EmailTaskInfo
+from django.core.exceptions import ValidationError
+
 class Task:
     def __init__(self, user_ebook, owner_model_id):
         self.user_ebook = user_ebook
@@ -49,7 +52,7 @@ class TaskManager(TaskFactory):
     """
 
     def __init__(self, scrap_type, user_ebook, user_email=None, user_price=None, email_case_model_id=None):
-        self.user_search = user_ebook
+        self.user_ebook = user_ebook
         self.email_case = {'email': user_email, 'price': user_price, 'model_id': email_case_model_id}
         self.scrap_type = self._own_type(scrap_type)
         self.scrap_model = self._pin_model()
@@ -60,8 +63,22 @@ class TaskManager(TaskFactory):
         return user_scrap_type
 
     def _pin_model(self):
-        # TODO: create core model
-        return 'model_id'
+        if self.email_case['model_id']:
+            # Task Email already has model created before, so escape.
+            return self.email_case['model_id']
+
+        new_info_model = FastTaskInfo(
+            task_type=self.scrap_type,
+            user_ebook=self.user_ebook
+        )
+
+        try:
+            new_info_model.full_clean()
+            new_info_model.save()
+        except ValidationError:
+            return None
+
+        return new_info_model.id
 
     def _pin_task(self):
         # TODO: Create list with task class object
@@ -73,7 +90,6 @@ class TaskManager(TaskFactory):
 
     @classmethod
     def create_email_task(cls):
-        # TODO: create core model, wihout instant web scrap
         return 'model_id'
 
 
