@@ -10,7 +10,7 @@ from scraper.models import FastTaskInfo, ScrapResult, EmailTaskInfo
 from django.core.exceptions import ValidationError
 from config import settings
 
-from tasks import fast_scrap_task
+from api.tasks import fast_scrap_task
 
 
 class ScrapEnginge:
@@ -77,8 +77,10 @@ class Task(ScrapEnginge):
             self._data_auto_save = None
 
     def _db_save(self, data_to_save):
-
-        ct = ContentType.objects.get(app_label='scraper', model='emailtaskinfo')
+        if self.__class__.__name__ == 'FastScrapMixin':
+            ct = ContentType.objects.get(app_label='scraper', model='fasttaskinfo')
+        else:
+            ct = ContentType.objects.get(app_label='scraper', model='emailtaskinfo')
 
         new_model = ScrapResult(
             data=data_to_save,
@@ -178,7 +180,7 @@ class TaskManager(TaskFactory):
         return user_input_type
 
     def _pin_model(self):
-        if self.email_case:
+        if self.email_case[0] is not None:
             # Task Email already has model created before, so escape.
             return self.email_case
 
@@ -196,7 +198,7 @@ class TaskManager(TaskFactory):
         except ValidationError:
             return None
 
-        return new_info_model.id
+        return new_info_model.id, None
 
     def _pin_task(self):
         if self.scrap_type == 'fast':
