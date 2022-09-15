@@ -8,22 +8,33 @@ import bs4
 
 
 class Engine:
+    info = 0
 
     async def scrap(self, session, url):
         async with session.get(url) as response:
+            print('scrap_in_with')
             html = await response.text()
-            beatiful_html = await self.prettify_response(html)
-            return beatiful_html
+
+        beatiful_html = await self.parser_job(html)
+        title = await self.search_title(beatiful_html)
+        return title
 
     @staticmethod
-    async def prettify_response(raw_data):
-        async def parser_job(data_to_parse):
-            tag_soup = bs4.BeautifulSoup(data_to_parse, 'lxml')
-            one_div = tag_soup.select_one('title')
-            return one_div
+    async def parser_job(data_to_parse):
+        print('parser_job')
+        await asyncio.sleep(1)
 
-        x = await parser_job(raw_data)
-        return x
+        async def inside_parser_job(data):
+            print('inside_parser_job')
+            tag_soup = bs4.BeautifulSoup(data, 'lxml')
+            return tag_soup
+
+        return await inside_parser_job(data_to_parse)
+
+    @staticmethod
+    async def search_title(tag_soup):
+        print('search_title')
+        return tag_soup.select_one('title')
 
     async def setup_task(self, tasks):
         tasks_to_run = []
