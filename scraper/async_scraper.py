@@ -3,38 +3,32 @@ import random
 
 import aiohttp
 import time
-import requests
 import bs4
+import requests
 
 
 class Engine:
-    info = 0
-
     async def scrap(self, session, url):
         async with session.get(url) as response:
-            print('scrap_in_with')
             html = await response.text()
 
-        beatiful_html = await self.parser_job(html)
-        title = await self.search_title(beatiful_html)
-        return title
+        prettify = await self.prettify_response(html)
+        return prettify
 
     @staticmethod
-    async def parser_job(data_to_parse):
-        print('parser_job')
-        await asyncio.sleep(1)
+    async def prettify_response(data_to_prettify):
+        # async def parser_html(data):
+        #     tag_soup = bs4.BeautifulSoup(data, 'lxml')
+        #     return tag_soup
+        #
+        # t_soup = await parser_html(data_to_prettify)
+        t_soup = bs4.BeautifulSoup(data_to_prettify, 'lxml')
+        ebook_main_container = t_soup.select_one('ul.catalog-items.lista')
+        all_ebooks = ebook_main_container.select('div [data-item-layout="tiles"]')
 
-        async def inside_parser_job(data):
-            print('inside_parser_job')
-            tag_soup = bs4.BeautifulSoup(data, 'lxml')
-            return tag_soup
-
-        return await inside_parser_job(data_to_parse)
-
-    @staticmethod
-    async def search_title(tag_soup):
-        print('search_title')
-        return tag_soup.select_one('title')
+        for i in all_ebooks:
+            title = i.select_one('a.catalog-tile__title span')
+            return title
 
     async def setup_task(self, tasks):
         tasks_to_run = []
@@ -46,13 +40,7 @@ class Engine:
             print(web_result)
 
 
-t = ['https://www.google.com/',
-     'https://www.wp.pl',
-     'https://www.youtube.com',
-     'https://www.onet.pl',
-     'https://helion.pl',
-     'https://www.empik.com'
-     ]
+t = ['https://woblink.com/katalog/ebooki?szukasz=korepetytor']
 
 random.shuffle(t)
 
@@ -60,3 +48,36 @@ start = time.time()
 test = Engine()
 asyncio.run(test.setup_task(t))
 print(f'aiohttp: {time.time() - start}')
+
+
+class ScrapEnginge_2:
+
+    def scrap_request(self, url):
+        try:
+            r = requests.get(url)
+        except requests.exceptions.RequestException:
+            return False
+
+        if r.status_code == 200:
+            return r.content
+
+        return False
+
+    def prettify_response(self, raw_data):
+        tag_soup = bs4.BeautifulSoup(raw_data, 'lxml')
+
+        ebook_main_container = tag_soup.select_one('ul.catalog-items.lista')
+        all_ebooks = ebook_main_container.select('div [data-item-layout="tiles"]')
+
+        for i in all_ebooks:
+            title = i.select_one('a.catalog-tile__title span')
+            return title
+        return False
+
+
+start2 = time.time()
+test_2 = ScrapEnginge_2()
+raw_data = test_2.scrap_request(t[0])
+x = test_2.prettify_response(raw_data)
+print(x)
+print(f'requests: {time.time() - start2}')
