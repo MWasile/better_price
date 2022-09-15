@@ -1,16 +1,29 @@
 import asyncio
+import random
+
 import aiohttp
 import time
 import requests
+import bs4
 
 
 class Engine:
 
-    @staticmethod
-    async def scrap(session, url):
+    async def scrap(self, session, url):
         async with session.get(url) as response:
             html = await response.text()
-            return html
+            beatiful_html = await self.prettify_response(html)
+            return beatiful_html
+
+    @staticmethod
+    async def prettify_response(raw_data):
+        async def parser_job(data_to_parse):
+            tag_soup = bs4.BeautifulSoup(data_to_parse, 'lxml')
+            one_div = tag_soup.select_one('title')
+            return one_div
+
+        x = await parser_job(raw_data)
+        return x
 
     async def setup_task(self, tasks):
         tasks_to_run = []
@@ -19,10 +32,9 @@ class Engine:
                 tasks_to_run.append(self.scrap(session, url))
 
             web_result = await asyncio.gather(*tasks_to_run)
+            print(web_result)
 
 
-start = time.time()
-test = Engine()
 t = ['https://www.google.com/',
      'https://www.wp.pl',
      'https://www.youtube.com',
@@ -30,24 +42,10 @@ t = ['https://www.google.com/',
      'https://helion.pl',
      'https://www.empik.com'
      ]
-asyncio.run(test.setup_task(t))
-print(f'aiohttp: {time.time() - start}')
 
-
-class Engine_2:
-    @staticmethod
-    def scrap(url):
-        r = requests.get(url)
-        return r.content
-
-    def setup_task(self, tasks):
-        web_result = []
-        for t in tasks:
-            new_r = self.scrap(t)
-            web_result.append(new_r)
-
+random.shuffle(t)
 
 start = time.time()
-x = Engine_2()
-x.setup_task(t)
-print(f'requests: {time.time() - start}')
+test = Engine()
+asyncio.run(test.setup_task(t))
+print(f'aiohttp: {time.time() - start}')
