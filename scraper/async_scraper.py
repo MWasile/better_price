@@ -1,45 +1,22 @@
 import asyncio
-import random
+import dataclasses
 from dataclasses import astuple, asdict
 from dataclasses import dataclass
+from decimal import Decimal
 
 import aiohttp
-import time
 import bs4
-import requests
-
-woblink = {
-    'url': 'https://woblink.com/katalog/ebooki?szukasz=korepetytor',
-    'first_qs': 'ul.catalog-items.lista',
-    'second_qs': 'div [data-item-layout="tiles"]',
-    'title_qs': 'a.catalog-tile__title span',
-}
-empik = {
-    'url': 'https://www.empik.com/audiobooki-i-ebooki,35,s?q=korepetytor&qtype=basicForm',
-    'first_qs': 'div.container.search-results.js-search-results',
-    'second_qs': 'div.search-list-item',
-    'title_qs': '.ta-product-title',
-}
-
-t = [woblink, empik]
 
 
 class ScrapEngine:
-
     async def scrap_request(self, session, task):
         async with session.get(task['url']) as response:
             html = await response.text()
 
-        prettify = await self.prettify_response(html, task)
-        return prettify
+        await self.prettify_response(html, task)
 
     @staticmethod
     async def prettify_response(data_to_prettify, task):
-        async def parser_html(data):
-            tag_soup = bs4.BeautifulSoup(data, 'lxml')
-            return tag_soup
-
-        # t_soup = await parser_html(data_to_prettify)
         t_soup = bs4.BeautifulSoup(data_to_prettify, 'lxml')
         ebook_main_container = t_soup.select_one(task['first_qs'])
         all_ebooks = ebook_main_container.select(task['second_qs'])
@@ -47,37 +24,60 @@ class ScrapEngine:
         for i in all_ebooks:
             title = i.select_one(task['title_qs'])
             print('aio: ', title.getText())
-            return title
+            return
 
     async def setup_task(self, tasks):
-        tasks_to_run = []
         async with aiohttp.ClientSession() as session:
-            for task in tasks:
-                tasks_to_run.append(self.scrap_request(session, task))
-
-            web_result = await asyncio.gather(*tasks_to_run)
+            tasks_to_run = (self.scrap_request(session, task) for task in tasks)
+            await asyncio.gather(*tasks_to_run)
 
 
-class TaskFactory:
-    @classmethod
-    def cls_to_data_class(cls):
-        pass
+class Empik:
+    BOOKSTORE_URL = 'https://www.empik.com/audiobooki-i-ebooki,35,s?q='
+    ALL_EBOOK_CONTAINER = 'div.container.search-results.js-search-results'
+    EBOOK_CONTAINER = 'div.search-list-item'
+    EBOOK_DETAIL = {
+        'author': 'a.smartAuthor',
+        'title': '.ta-product-title',
+        'price': '.price.ta-price-tile',
+        # TODO direclink, url_image
+    }
 
-    @classmethod
-    def dict_to_data_class(cls):
-        pass
+    def __init__(self, user_input):
+        self.user_input = user_input
+        self.urls = self.get_url()
+
+    def get_url(self):
+        if len(self.user_input.split()) < 2:
+            return ''.join([self.BOOKSTORE_URL, self.user_input])
+        return ''.join([self.BOOKSTORE_URL, '%20'.join(self.user_input.split())])
 
 
-test_result = []
+@dataclass
+class Task:
+    owner_model_id: int
+    user_input: str
+    data: dict
+    _: dataclasses.KW_ONLY
+    email_price: Decimal = False
+    url: str = None
+    querry_selectors: dict = None
 
-for i in range(0, 50):
-    start = time.time()
-    l = ScrapEngine()
-    asyncio.run(l.setup_task(t))
-    end = time.time() - start
-    test_result.append(end)
+    def __post_init__(self):
+        # In celery, this class is initiated without any inheritance, but in Task Manager he needs to be mixed with
+        # any bookstore class. If mixed, we need to grab necessary class attribute as url or queryselectors because
+        # we are using 'asdict' when passing this class as args to Celery Worker.
+        if 'obiect' not in self.__class__.__bases__:
+            super().__init__(self.user_input)
+            self.url = self.urls
+            self.querry_selectors = {
+                'BOOKSTORE_URL': self.BOOKSTORE_URL,
+                'ALL_EBOOK_CONTAINER': self.ALL_EBOOK_CONTAINER,
+                'EBOOK_CONTAINER': self.EBOOK_CONTAINER,
+                'EBOOK_DETAIL': self.EBOOK_DETAIL
+            }
 
-print('[Test results] =>', test_result)
-www = sum(test_result) / len(test_result)
 
-print('Ave:', www)
+
+test = Task(1, 'Korepetytor', {})
+print(asdict(test))
