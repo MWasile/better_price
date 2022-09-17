@@ -32,42 +32,22 @@ class ScrapEngine:
             await asyncio.gather(*tasks_to_run)
 
 
-class Empik:
-    BOOKSTORE_URL = 'https://www.empik.com/audiobooki-i-ebooki,35,s?q='
-    ALL_EBOOK_CONTAINER = 'div.container.search-results.js-search-results'
-    EBOOK_CONTAINER = 'div.search-list-item'
-    EBOOK_DETAIL = {
-        'author': 'a.smartAuthor',
-        'title': '.ta-product-title',
-        'price': '.price.ta-price-tile',
-        # TODO direclink, url_image
-    }
-
-    def __init__(self, user_input):
-        self.user_input = user_input
-        self.urls = self.get_url()
-
-    def get_url(self):
-        if len(self.user_input.split()) < 2:
-            return ''.join([self.BOOKSTORE_URL, self.user_input])
-        return ''.join([self.BOOKSTORE_URL, '%20'.join(self.user_input.split())])
-
-
 @dataclass
 class Task:
     owner_model_id: int
     user_input: str
-    data: dict
     _: dataclasses.KW_ONLY
-    email_price: Decimal = False
+    _data: dict
     url: str = None
     querry_selectors: dict = None
+    email: bool = None
+    email_price: Decimal = None
 
     def __post_init__(self):
         # In celery, this class is initiated without any inheritance, but in Task Manager he needs to be mixed with
         # any bookstore class. If mixed, we need to grab necessary class attribute as url or queryselectors because
         # we are using 'asdict' when passing this class as args to Celery Worker.
-        if 'obiect' not in self.__class__.__bases__:
+        if self.__class__.__base__ != object:
             super().__init__(self.user_input)
             self.url = self.urls
             self.querry_selectors = {
@@ -77,7 +57,14 @@ class Task:
                 'EBOOK_DETAIL': self.EBOOK_DETAIL
             }
 
+    @property
+    def data(self):
+        return self._data
 
+    @data.setter
+    def data(self, data_from_bookstores):
+        if not self.email and self.email is not None:
+            return
 
-test = Task(1, 'Korepetytor', {})
-print(asdict(test))
+        # TODO: DB AUTOSAVE
+        self._data = data_from_bookstores
