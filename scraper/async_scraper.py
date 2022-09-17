@@ -8,6 +8,21 @@ import time
 import bs4
 import requests
 
+woblink = {
+    'url': 'https://woblink.com/katalog/ebooki?szukasz=korepetytor',
+    'first_qs': 'ul.catalog-items.lista',
+    'second_qs': 'div [data-item-layout="tiles"]',
+    'title_qs': 'a.catalog-tile__title span',
+}
+empik = {
+    'url': 'https://www.empik.com/audiobooki-i-ebooki,35,s?q=korepetytor&qtype=basicForm',
+    'first_qs': 'div.container.search-results.js-search-results',
+    'second_qs': 'div.search-list-item',
+    'title_qs': '.ta-product-title',
+}
+
+t = [woblink, empik]
+
 
 class ScrapEngine:
 
@@ -24,8 +39,8 @@ class ScrapEngine:
             tag_soup = bs4.BeautifulSoup(data, 'lxml')
             return tag_soup
 
-        t_soup = await parser_html(data_to_prettify)
-        # t_soup = bs4.BeautifulSoup(data_to_prettify, 'lxml')
+        # t_soup = await parser_html(data_to_prettify)
+        t_soup = bs4.BeautifulSoup(data_to_prettify, 'lxml')
         ebook_main_container = t_soup.select_one(task['first_qs'])
         all_ebooks = ebook_main_container.select(task['second_qs'])
 
@@ -38,28 +53,31 @@ class ScrapEngine:
         tasks_to_run = []
         async with aiohttp.ClientSession() as session:
             for task in tasks:
-                tasks_to_run.append(self.scrap(session, task))
+                tasks_to_run.append(self.scrap_request(session, task))
 
             web_result = await asyncio.gather(*tasks_to_run)
 
 
-@dataclass
-class Task:
-    owner_model_id: int
-    site_url: str
-    querry_selectors: dict
+class TaskFactory:
+    @classmethod
+    def cls_to_data_class(cls):
+        pass
 
-    def __post_init__(self):
-        super(Task, self).__init__('XD')
-    
-
-class Empik:
-    def __init__(self):
-        self.url = 'XDD'
+    @classmethod
+    def dict_to_data_class(cls):
+        pass
 
 
-inheritances = Task, Empik
+test_result = []
 
-scrap_task = type('ScrapTask', inheritances, {})
-test = scrap_task(**{'owner_model_id': 'XD', 'site_url': 'XDDD', 'querry_selectors': {}})
-print(dir(test))
+for i in range(0, 50):
+    start = time.time()
+    l = ScrapEngine()
+    asyncio.run(l.setup_task(t))
+    end = time.time() - start
+    test_result.append(end)
+
+print('[Test results] =>', test_result)
+www = sum(test_result) / len(test_result)
+
+print('Ave:', www)
