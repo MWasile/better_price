@@ -42,7 +42,7 @@ class Task:
     owner_model_id: int
     user_input: str
     _: dataclasses.KW_ONLY
-    _data: dict
+    _data: dict = None
     url: str = None
     querry_selectors: dict = None
     email: bool = None
@@ -54,9 +54,9 @@ class Task:
         # we are using 'asdict' when passing this class as args to Celery Worker.
         if self.__class__.__base__ != object:
             super().__init__(self.user_input)
-            self.url = self.urls
+            self.url = self.bookstores_url
             self.querry_selectors = {
-                'BOOKSTORE_URL': self.BOOKSTORE_URL,
+                'BOOKSTORE_URL': self.bookstores_url,
                 'ALL_EBOOK_CONTAINER': self.ALL_EBOOK_CONTAINER,
                 'EBOOK_CONTAINER': self.EBOOK_CONTAINER,
                 'EBOOK_DETAIL': self.EBOOK_DETAIL
@@ -84,12 +84,13 @@ class TaskManager:
 
     def _pin_model(self):
         # Task Email already has model created before, so escape.
-        if not self.email[0]:
+        if self.email[0]:
+            print('XDDDDDD')
             return self.email[2]
 
         new_core_model = FastTaskInfo(
             task_type='fast',
-            user_ebook=self.user_ebook
+            user_ebook=self.user_input
         )
 
         try:
@@ -110,10 +111,9 @@ class TaskManager:
             raise ValueError(f'Bookstores class name must be specified in SCRAPER_BOOKSTORES')
 
         mix_inheritances = tuple(
-            (Task, getattr(sys.modules[__name__], import_name) for import_name in bookstore_settings)
-        )
+            (Task, getattr(sys.modules[__name__], import_name)) for import_name in bookstore_settings)
 
-        bases = [type('ReadyTask', mixin_inheritance) for mixin_inheritance in mix_inheritances]
+        bases = [type('ReadyTask', mixin_inheritance, {}) for mixin_inheritance in mix_inheritances]
 
         tasks = [asdict(mix_class(self.model_id, self.user_input, email=self.email[0], email_price=self.email[1]))
                  for mix_class in bases]
@@ -134,7 +134,49 @@ class TaskManager:
             new_email_task.save()
         except ValidationError:
             return False
-        return new_email_task
+        return new_email_task.id
 
     def run(self):
         pass
+
+
+class Woblink:
+    BOOKSTORE_URL = 'https://woblink.com/katalog/ebooki?szukasz='
+    ALL_EBOOK_CONTAINER = 'ul.catalog-items.lista'
+    EBOOK_CONTAINER = 'div [data-item-layout="tiles"]'
+    EBOOK_DETAIL = {
+        'author': 'p.catalog-tile__author a',
+        'title': 'a.catalog-tile__title span',
+        'price': 'p.catalog-tile__new-price span',
+        # TODO direclink, url_image
+    }
+
+    def __init__(self, user_input):
+        self.user_input = user_input
+        self.bookstores_url = self.get_url()
+
+    def get_url(self):
+        if len(self.user_input.split()) < 2:
+            return ''.join([self.BOOKSTORE_URL, self.user_input])
+        return ''.join([self.BOOKSTORE_URL, '+'.join(self.user_input.split())])
+
+
+class Empik:
+    BOOKSTORE_URL = 'https://www.empik.com/audiobooki-i-ebooki,35,s?q='
+    ALL_EBOOK_CONTAINER = 'div.container.search-results.js-search-results'
+    EBOOK_CONTAINER = 'div.search-list-item'
+    EBOOK_DETAIL = {
+        'author': 'a.smartAuthor',
+        'title': '.ta-product-title',
+        'price': '.price.ta-price-tile',
+        # TODO direclink, url_image
+    }
+
+    def __init__(self, user_input):
+        self.user_input = user_input
+        self.bookstores_url = self.get_url()
+
+    def get_url(self):
+        if len(self.user_input.split()) < 2:
+            return ''.join([self.BOOKSTORE_URL, self.user_input])
+        return ''.join([self.BOOKSTORE_URL, '%20'.join(self.user_input.split())])
