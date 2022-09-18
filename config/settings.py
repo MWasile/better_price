@@ -43,6 +43,7 @@ INSTALLED_APPS = [
 
     'rest_framework',
 
+    'scraper.apps.ScraperConfig',
     'api.apps.ApiConfig',
     'users.apps.UsersConfig',
     'home.apps.HomeConfig',
@@ -152,17 +153,24 @@ CELERY_BROKER_URL = 'redis://celery_redis:6379/0'
 CELERY_RESULT_BACKEND = 'redis://celery_redis:6379/0'
 
 CELERY_ROUTES = {
-    'api.tasks.email': {'queue': 'email_queue'},
-    'api.tasks.scrap*': {'queue': 'scrap_queue'},
+    'scraper.tasks.email*': {'queue': 'email_queue'},
+    'scraper.tasks.fast_scrap_task': {'queue': 'scrap_queue'},
 }
 CELERY_BEAT_SCHEDULE = {
     'email': {
-        'task': 'api.tasks.email',
+        'task': 'scraper.tasks.email_task',
         'schedule': 60.0,
         'options': {
             'expires': 10,
             'queue': 'email_queue',
         },
     },
+
 }
 
+# SCRAPER CONFIG
+
+SCRAPER_BOOKSTORES = [
+    'Woblink',
+    'Empik'
+]
