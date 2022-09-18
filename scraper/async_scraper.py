@@ -5,34 +5,39 @@ from dataclasses import astuple, asdict
 from dataclasses import dataclass
 from decimal import Decimal
 
+import socket
 import aiohttp
 import bs4
+from asgiref.sync import sync_to_async
+from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 
 from config import settings
-from scraper.models import FastTaskInfo, EmailTaskInfo
+from scraper.models import FastTaskInfo, EmailTaskInfo, ScrapResult
+from scraper.tasks import fast_scrap_task
 
 
 class ScrapEngine:
+
     async def scrap_request(self, session, task):
-        async with session.get(task['url']) as response:
+        async with session.get(task.url) as response:
             html = await response.text()
 
-        await self.prettify_response(html, task)
+        data = await self.prettify_response(html, task)
+        await task.self_save(data)
 
     @staticmethod
     async def prettify_response(data_to_prettify, task):
         t_soup = bs4.BeautifulSoup(data_to_prettify, 'lxml')
-        ebook_main_container = t_soup.select_one(task['first_qs'])
-        all_ebooks = ebook_main_container.select(task['second_qs'])
+        ebook_main_container = t_soup.select_one(task.querry_selectors['ALL_EBOOK_CONTAINER'])
+        all_ebooks = ebook_main_container.select(task.querry_selectors['EBOOK_CONTAINER'])
 
         for i in all_ebooks:
-            title = i.select_one(task['title_qs'])
-            print('aio: ', title.getText())
-            return
+            title = i.select_one(task.querry_selectors['EBOOK_DETAIL']['title'])
+            return title.getText()
 
     async def setup_task(self, tasks):
-        async with aiohttp.ClientSession() as session:
+        async with aiohttp.ClientSession(trust_env=True) as session:
             tasks_to_run = (self.scrap_request(session, task) for task in tasks)
             await asyncio.gather(*tasks_to_run)
 
@@ -42,7 +47,7 @@ class Task:
     owner_model_id: int
     user_input: str
     _: dataclasses.KW_ONLY
-    _data: dict = None
+    data: dict = None
     url: str = None
     querry_selectors: dict = None
     email: bool = None
@@ -62,17 +67,23 @@ class Task:
                 'EBOOK_DETAIL': self.EBOOK_DETAIL
             }
 
-    @property
-    def data(self):
-        return self._data
+    async def self_save(self, data_from_bookstores):
+        @sync_to_async
+        def wrapper():
 
-    @data.setter
-    def data(self, data_from_bookstores):
-        if not self.email and self.email is not None:
-            return
+            ct = ContentType.objects.get(app_label='scraper', model='fasttaskinfo')
+            new_model = ScrapResult(
+                    data=data_from_bookstores,
+                    content_type=ct,
+                    object_id=self.owner_model_id
+                )
 
-        # TODO: DB AUTOSAVE
-        self._data = data_from_bookstores
+            try:
+                new_model.save()
+            except ValidationError:
+                return None
+
+        await wrapper()
 
 
 class TaskManager:
@@ -85,7 +96,6 @@ class TaskManager:
     def _pin_model(self):
         # Task Email already has model created before, so escape.
         if self.email[0]:
-            print('XDDDDDD')
             return self.email[2]
 
         new_core_model = FastTaskInfo(
@@ -137,7 +147,7 @@ class TaskManager:
         return new_email_task.id
 
     def run(self):
-        pass
+        fast_scrap_task.apply_async([self.tasks])
 
 
 class Woblink:
