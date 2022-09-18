@@ -1,5 +1,6 @@
 import asyncio
 import dataclasses
+import decimal
 import difflib
 import sys
 import aiohttp
@@ -8,7 +9,6 @@ import bs4
 from dataclasses import asdict
 from dataclasses import dataclass
 from decimal import Decimal
-
 
 from asgiref.sync import sync_to_async
 from django.contrib.contenttypes.models import ContentType
@@ -27,7 +27,13 @@ class ScrapEngine:
             html = await response.text()
 
         data = await self.prettify_response(html, task)
-        await task.self_save(data)
+
+        if task.email and data['result']['price']:
+            if await task.email_price_checker(data['result']['price']):
+                await task.self_save(data)
+            return False
+        else:
+            await task.self_save(data)
 
     async def is_match(self, arg1, arg2):
         if not difflib.SequenceMatcher(None, arg1, arg2).ratio() > self.MATCH_SETTINGS:
@@ -48,7 +54,7 @@ class ScrapEngine:
                     'author': ebook.select_one(task.querry_selectors['EBOOK_DETAIL']['author']).getText(strip=True),
                     'price': ebook.select_one(task.querry_selectors['EBOOK_DETAIL']['price'])
                         .find(text=True, recursive=False).getText(strip=True),
-                        }}
+                }}
 
     async def setup_task(self, tasks):
         async with aiohttp.ClientSession(trust_env=True) as session:
@@ -99,6 +105,20 @@ class Task:
                 return None
 
         await wrapper()
+
+    async def email_price_checker(self, price_from_website):
+
+        if price_from_website.find(',') != -1:
+            price_from_website = price_from_website.replace(',', '.')
+
+        pretty_price = "".join(char for char in price_from_website if char.isdigit() or char == '.')
+
+        try:
+            if Decimal(pretty_price) > Decimal(self.email_price):
+                return True
+            return False
+        except decimal.InvalidOperation:
+            return False
 
 
 class TaskManager:
