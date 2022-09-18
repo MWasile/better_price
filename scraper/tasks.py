@@ -1,6 +1,5 @@
 import asyncio
 
-from asgiref.sync import sync_to_async
 from celery import shared_task
 from scraper import async_scraper as acs
 from scraper.models import EmailTaskInfo
