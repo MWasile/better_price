@@ -1,13 +1,15 @@
 import asyncio
 import dataclasses
+import difflib
 import sys
-from dataclasses import astuple, asdict
+import aiohttp
+import bs4
+
+from dataclasses import asdict
 from dataclasses import dataclass
 from decimal import Decimal
 
-import socket
-import aiohttp
-import bs4
+
 from asgiref.sync import sync_to_async
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
@@ -18,6 +20,7 @@ from scraper.tasks import fast_scrap_task
 
 
 class ScrapEngine:
+    MATCH_SETTINGS = 0.80
 
     async def scrap_request(self, session, task):
         async with session.get(task.url) as response:
@@ -26,15 +29,26 @@ class ScrapEngine:
         data = await self.prettify_response(html, task)
         await task.self_save(data)
 
-    @staticmethod
-    async def prettify_response(data_to_prettify, task):
+    async def is_match(self, arg1, arg2):
+        if not difflib.SequenceMatcher(None, arg1, arg2).ratio() > self.MATCH_SETTINGS:
+            return False
+        return True
+
+    async def prettify_response(self, data_to_prettify, task):
         t_soup = bs4.BeautifulSoup(data_to_prettify, 'lxml')
         ebook_main_container = t_soup.select_one(task.querry_selectors['ALL_EBOOK_CONTAINER'])
         all_ebooks = ebook_main_container.select(task.querry_selectors['EBOOK_CONTAINER'])
 
-        for i in all_ebooks:
-            title = i.select_one(task.querry_selectors['EBOOK_DETAIL']['title'])
-            return title.getText()
+        for ebook in all_ebooks:
+            title = ebook.select_one(task.querry_selectors['EBOOK_DETAIL']['title'])
+
+            if title and await self.is_match(title.getText(strip=True), task.user_input):
+                return {'result': {
+                    'title': title.getText(strip=True),
+                    'author': ebook.select_one(task.querry_selectors['EBOOK_DETAIL']['author']).getText(strip=True),
+                    'price': ebook.select_one(task.querry_selectors['EBOOK_DETAIL']['price'])
+                        .find(text=True, recursive=False).getText(strip=True),
+                        }}
 
     async def setup_task(self, tasks):
         async with aiohttp.ClientSession(trust_env=True) as session:
@@ -73,12 +87,13 @@ class Task:
 
             ct = ContentType.objects.get(app_label='scraper', model='fasttaskinfo')
             new_model = ScrapResult(
-                    data=data_from_bookstores,
-                    content_type=ct,
-                    object_id=self.owner_model_id
-                )
+                data=data_from_bookstores,
+                content_type=ct,
+                object_id=self.owner_model_id
+            )
 
             try:
+                new_model.full_clean()
                 new_model.save()
             except ValidationError:
                 return None
