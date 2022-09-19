@@ -15,7 +15,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 
 from config import settings
-from scraper import models, tasks
+from scraper import models, tasks, signals
 
 
 class ScrapEngine:
@@ -29,7 +29,7 @@ class ScrapEngine:
 
         if task.email and data['result']['price']:
             if await task.email_price_checker(data['result']['price']):
-                await task.self_save(data)
+                await self.send_async_signal(task, data)
             return False
         else:
             await task.self_save(data)
@@ -38,6 +38,22 @@ class ScrapEngine:
         if not difflib.SequenceMatcher(None, arg1, arg2).ratio() > self.MATCH_SETTINGS:
             return False
         return True
+
+    @staticmethod
+    def send_signal(task, data):
+        signals.email_success.send(
+            sender='aio',
+            task_id='XD',
+            scrap_data={
+                'task_data': {
+                    'id': task.owner_model_id,
+                    'title': data['result']['title'],
+                }
+            })
+        return True
+
+    async def send_async_signal(self, task, data):
+        return await asyncio.to_thread(self.send_signal, task, data)
 
     async def prettify_response(self, data_to_prettify, task):
         t_soup = bs4.BeautifulSoup(data_to_prettify, 'lxml')
