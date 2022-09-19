@@ -15,8 +15,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 
 from config import settings
-from scraper.models import FastTaskInfo, EmailTaskInfo, ScrapResult
-from scraper.tasks import fast_scrap_task
+from scraper import models, tasks
 
 
 class ScrapEngine:
@@ -92,7 +91,7 @@ class Task:
         def wrapper():
 
             ct = ContentType.objects.get(app_label='scraper', model='fasttaskinfo')
-            new_model = ScrapResult(
+            new_model = models.ScrapResult(
                 data=data_from_bookstores,
                 content_type=ct,
                 object_id=self.owner_model_id
@@ -133,7 +132,7 @@ class TaskManager:
         if self.email[0]:
             return self.email[2]
 
-        new_core_model = FastTaskInfo(
+        new_core_model = models.FastTaskInfo(
             task_type='fast',
             user_ebook=self.user_input
         )
@@ -167,7 +166,7 @@ class TaskManager:
 
     @classmethod
     def create_email_task(cls, user_input, user_email, user_price):
-        new_email_task = EmailTaskInfo(
+        new_email_task = models.EmailTaskInfo(
             task_type='email',
             user_ebook=user_input,
             email=user_email,
@@ -182,7 +181,7 @@ class TaskManager:
         return new_email_task.id
 
     def run(self):
-        fast_scrap_task.apply_async([self.tasks])
+        tasks.fast_scrap_task.apply_async([self.tasks])
 
 
 class Woblink:
