@@ -21,6 +21,10 @@ class EmailTaskInfo(BaseTaskInfo):
     price = models.DecimalField(max_digits=8, decimal_places=2, null=True)
     status = models.BooleanField(default=True)
 
+    def mark_as_done(self):
+        setattr(self, 'status', False)
+        self.save()
+
 
 class ScrapResult(models.Model):
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
