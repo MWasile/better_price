@@ -1,6 +1,56 @@
-{% extends 'base.html' %}
+{% include 'base.html' %}
 {% load static %}
 
 {% block scripts %}
      <script src="{% static '/scripts/channels_js.js' %}"></script>
+{% endblock %}
+
+
+{% block container %}
+
+
+    <div class="h-3/4 w-1/2 flex flex-row mt-2 ml-2">
+        <div class="user-input w-3/4">
+            <input type="text" id="user-input" class="bg-gray-200 appearance-none border-2 border-gray-200 rounded w-full py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-purple-500">
+{#            <button type="submit" id="user-btn" class="shadow bg-purple-500 hover:bg-purple-400 focus:shadow-outline focus:outline-none text-white font-bold py-2 px-4 rounded">Szukaj książki</button>#}
+        </div>
+        <button type="submit" id="user-btn" class="shadow bg-purple-500 hover:bg-purple-400 focus:shadow-outline focus:outline-none text-white font-bold py-2 px-4 rounded">Search</button>
+    </div>
+
+    <div class="h-3/4 w-1/2 flex flex-col mt-2 ml-2 items-center">
+        <div class="spinner invisible">
+            <div class="loader"></div>
+        </div>
+        <div class="spinner invisible">
+            <div class="loader"></div>
+        </div>
+    </div>
+
+
+   <table class="table-auto w-1/3 ml-2 mt-4 invisible" id="main">
+      <tbody>
+         <tr class="border-b hover:bg-gray-50 invisible" id="item1">
+            <td class="p-4" id="title1">
+               A
+            </td>
+            <td class="p-4" id="author1">
+               B
+            </td>
+            <td class="p-4" id="price1">
+               C
+            </td>
+         </tr>
+         <tr class="border-b hover:bg-gray-50 invisible" id="item2">
+            <td class="p-4" id="title2">
+               A
+            </td>
+            <td class="p-4" id="author2">
+               B
+            </td>
+            <td class="p-4" id="price2">
+               C
+            </td>
+         </tr>
+      </tbody>
+   </table>
 {% endblock %}

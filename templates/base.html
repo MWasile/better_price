@@ -10,35 +10,22 @@
     <title>Django Template - {% block title %}Welcome{% endblock %}</title>
 
     {% block styles %}
-        <link rel="stylesheet" href="{% static 'styles/bootstrap.min.css' %}">
+        <link rel="stylesheet" href="{% static 'styles/wheel.css' %}">
     {% endblock %}
 
     {% block scripts %}
-        <script src="{% static 'scripts/bootstrap.min.js' %}"></script>
+{#        <script src="{% static 'scripts/bootstrap.min.js' %}"></script>#}
+        <script src="https://cdn.tailwindcss.com"></script>
     {% endblock %}
 </head>
-<body>
+<body class="bg-slate-500">
 
-{% include 'partials/navbar.html' %}
 
-<div class="container mt-3">
-    <div class="row">
-        <div class="col-8">
-            {% block container %}{% endblock %}
-        </div>
-        <div class="col-4">
-            {% block aside %}{% endblock %}
-        </div>
-    </div>
-</div>
+{% block container %}{% endblock %}
 
-<div class="container">
-    <div class="row">
-        <div class="col">
-            {% block footer %}{% endblock %}
-        </div>
-    </div>
-</div>
+
+
+
 
 </body>
 </html>
