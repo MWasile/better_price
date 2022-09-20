@@ -5,8 +5,8 @@ from scraper import async_scraper as acs
 from scraper.models import EmailTaskInfo
 
 
-@shared_task(queue='scrap_queue')
-def fast_scrap_task(task_list):
+@shared_task(bind=True, queue='scrap_queue')
+def fast_scrap_task(self, task_list):
     task_to_scrap = [
         acs.Task(
             task['owner_model_id'],
