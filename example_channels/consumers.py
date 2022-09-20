@@ -18,7 +18,7 @@ class Massage(Enum):
 
 class EbookHelper:
     class Massage(Enum):
-        BOOKSTORES_NUMBER = 'NR'
+        BOOKSTORES_NUMBER = 'LEN'
         TASK_DATA = 'DATA'
         END = 'END'
 
@@ -56,8 +56,11 @@ class EbookHelper:
 
         return True
 
-    async def push_to_frontend(self, massage_type, data='No data.'):
-        await self.consumer.send(text_data=json.dumps({f'{massage_type}': f'{data}'}))
+    async def push_to_frontend(self, massage_type, data=''):
+        await self.consumer.send(text_data=json.dumps(
+            {'massage': massage_type.value,
+             f'data': f'{data}'}
+        ))
 
     async def recieve_management(self):
 
@@ -82,8 +85,6 @@ class SimpleConsumer(AsyncWebsocketConsumer):
 
     async def receive(self, text_data=None, **kwargs):
         data = json.loads(text_data)
-
-        # print(data)
 
         async with EbookHelper(self, data) as helper:
             await helper.recieve_management()
