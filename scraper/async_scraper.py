@@ -30,7 +30,6 @@ class ScrapEngine:
         if task.email and data['result']['price']:
             if await task.email_price_checker(data['result']['price']):
                 await self.send_async_signal(task, data)
-            return False
         else:
             await task.self_save(data)
 
@@ -197,7 +196,8 @@ class TaskManager:
         return new_email_task.id
 
     def run(self):
-        tasks.fast_scrap_task.apply_async([self.tasks])
+        celery_task_id = tasks.fast_scrap_task.apply_async([self.tasks])
+        return celery_task_id
 
 
 class Woblink:
