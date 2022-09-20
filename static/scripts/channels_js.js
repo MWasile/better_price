@@ -1,14 +1,34 @@
- const chatSocket = new WebSocket(
-            'ws://'
-            + window.location.host
-            + '/test'
-        );
+document.addEventListener("DOMContentLoaded", function() {
+    const ebookSocket = new WebSocket(
+        'ws://'
+        + window.location.host
+        + '/test'
+    );
 
-chatSocket.onmessage = function(e) {
-    console.log(e.data)
-    console.log('działaj no')
-};
+    ebookSocket.onmessage = function (e) {
+        console.log(e.data)
 
-chatSocket.onclose = function(e) {
-    console.error('Chat socket closed unexpectedly');
-};
+    };
+
+    ebookSocket.onclose = function (e) {
+        console.error('Chat socket closed unexpectedly');
+    };
+
+
+
+
+    const user_btn = document.querySelector("#user-btn")
+
+    user_btn.addEventListener("click", () =>{
+        const user_input = document.querySelector('#user-input').value
+
+
+        ebookSocket.send(JSON.stringify({
+            'massage': `${user_input}`
+        }))
+
+    })
+
+
+
+})
