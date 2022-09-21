@@ -3,6 +3,7 @@ import dataclasses
 import decimal
 import difflib
 import sys
+
 import aiohttp
 import bs4
 
@@ -55,20 +56,54 @@ class ScrapEngine:
         return await asyncio.to_thread(self.send_signal, task, data)
 
     async def prettify_response(self, data_to_prettify, task):
-        t_soup = bs4.BeautifulSoup(data_to_prettify, 'lxml')
-        ebook_main_container = t_soup.select_one(task.querry_selectors['ALL_EBOOK_CONTAINER'])
-        all_ebooks = ebook_main_container.select(task.querry_selectors['EBOOK_CONTAINER'])
+        def p_text(qs):
+            return qs.get_text(strip=True)
 
-        for ebook in all_ebooks:
-            title = ebook.select_one(task.querry_selectors['EBOOK_DETAIL']['title'])
+        def p_decimal(qs):
+            if qs is None:
+                return None
 
-            if title and await self.is_match(title.getText(strip=True), task.user_input):
-                return {'result': {
-                    'title': title.getText(strip=True),
-                    'author': ebook.select_one(task.querry_selectors['EBOOK_DETAIL']['author']).getText(strip=True),
-                    'price': ebook.select_one(task.querry_selectors['EBOOK_DETAIL']['price'])
-                        .find(text=True, recursive=False).getText(strip=True),
-                }}
+            pretty_price = qs.find(text=True, recursive=False).getText(strip=True)
+            if pretty_price.find(',') != -1:
+                pretty_price = pretty_price.replace(',', '.')
+
+            pretty_price = "".join(char for char in pretty_price if char.isdigit() or char == '.')
+            return pretty_price
+
+        def p_attr(qs, attr):
+            if qs is None:
+                return None
+            try:
+                return qs[attr]
+            except TypeError:
+                return ''
+
+        tag_soup = bs4.BeautifulSoup(data_to_prettify, 'lxml')
+
+        ebooks_in_container = tag_soup.select_one(task.querry_selectors['ALL_EBOOK_CONTAINER']). \
+            select(task.querry_selectors['EBOOK_CONTAINER'])
+
+        scrap_result = {}
+
+        for ebook in ebooks_in_container:
+            title = p_text(ebook.select_one(task.querry_selectors['EBOOK_DETAILS']['title']['qs']))
+
+            if title and await self.is_match(title, task.user_input):
+
+                for key, detail in task.querry_selectors['EBOOK_DETAILS'].items():
+                    match detail['type']:
+                        case 'text':
+                            value = p_text(ebook.select_one(detail['qs']))
+                        case 'decimal':
+                            value = p_decimal(ebook.select_one(detail['qs']))
+                        case 'attribute':
+                            value = p_attr(ebook.select_one(detail['qs']), detail['attr'])
+                        case _:
+                            value = ""
+
+                    scrap_result.update({key: value})
+                return scrap_result
+        return None
 
     async def setup_task(self, tasks):
         async with aiohttp.ClientSession(trust_env=True) as session:
@@ -98,7 +133,7 @@ class Task:
                 'BOOKSTORE_URL': self.bookstores_url,
                 'ALL_EBOOK_CONTAINER': self.ALL_EBOOK_CONTAINER,
                 'EBOOK_CONTAINER': self.EBOOK_CONTAINER,
-                'EBOOK_DETAIL': self.EBOOK_DETAIL
+                'EBOOK_DETAILS': self.EBOOK_DETAILS
             }
 
     async def self_save(self, data_from_bookstores):
@@ -204,11 +239,12 @@ class Woblink:
     BOOKSTORE_URL = 'https://woblink.com/katalog/ebooki?szukasz='
     ALL_EBOOK_CONTAINER = 'ul.catalog-items.lista'
     EBOOK_CONTAINER = 'div [data-item-layout="tiles"]'
-    EBOOK_DETAIL = {
-        'author': 'p.catalog-tile__author a',
-        'title': 'a.catalog-tile__title span',
-        'price': 'p.catalog-tile__new-price span',
-        # TODO direclink, url_image
+    EBOOK_DETAILS = {
+        'author': {'qs': 'p.catalog-tile__author a', 'type': 'text'},
+        'title': {'qs': 'a.catalog-tile__title span', 'type': 'text'},
+        'price': {'qs': 'p.catalog-tile__new-price span', 'type': 'decimal'},
+        'jpg': {'qs': '.lazy-animated', 'type': 'attribute', 'attr': 'srcset'},
+        'url': {'qs': ".catalog-tile__title", 'type': 'attribute', 'attr': 'href'},
     }
 
     def __init__(self, user_input):
@@ -225,11 +261,12 @@ class Empik:
     BOOKSTORE_URL = 'https://www.empik.com/audiobooki-i-ebooki,35,s?q='
     ALL_EBOOK_CONTAINER = 'div.container.search-results.js-search-results'
     EBOOK_CONTAINER = 'div.search-list-item'
-    EBOOK_DETAIL = {
-        'author': 'a.smartAuthor',
-        'title': '.ta-product-title',
-        'price': '.price.ta-price-tile',
-        # TODO direclink, url_image
+    EBOOK_DETAILS = {
+        'author': {'qs': 'a.smartAuthor', 'type': 'text'},
+        'title': {'qs': '.ta-product-title', 'type': 'text'},
+        'price': {'qs': '.price.ta-price-tile', 'type': 'decimal'},
+        'jpg': {'qs': '.lazy', 'type': 'attribute', 'attr': 'lazy-img'},
+        'url': {'qs': '.seoTitle', 'type': 'attribute', 'attr': 'href'}
     }
 
     def __init__(self, user_input):
