@@ -17,10 +17,6 @@ class Massage(Enum):
 
 
 class EbookHelper:
-    class Massage(Enum):
-        BOOKSTORES_NUMBER = 'LEN'
-        TASK_DATA = 'DATA'
-        END = 'END'
 
     def __init__(self, consumer, data_from_user):
         self.consumer = consumer
