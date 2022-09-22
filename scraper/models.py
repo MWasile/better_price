@@ -2,16 +2,15 @@ from django.contrib.auth.models import User
 from django.contrib.contenttypes.fields import GenericRelation, GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
-
-
+from django.conf import settings
 
 
 class BaseInfo(models.Model):
     user_input_search = models.CharField(max_length=200)
     created = models.TimeField(auto_now=True)
     results = GenericRelation('ScrapEbookResult')
-    search_for = models.ForeignKey(User, related_name='%(class)s_related', blank=True, null=True,
-                                   on_delete=models.PROTECT)
+    # search_for = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='%(class)s_related', blank=True, null=True,
+    #                                on_delete=models.PROTECT)
 
     class Meta:
         abstract = True
@@ -39,12 +38,12 @@ class ScrapEbookResult(models.Model):
     object_id = models.PositiveIntegerField()
     content_object = GenericForeignKey('content_type', 'object_id')
 
-    web_bookstore = models.CharField(max_length=100)
-    web_author = models.CharField(max_length=100)
-    web_title = models.CharField(max_length=200)
+    web_bookstore = models.CharField(max_length=100, blank=True, null=True)
+    web_author = models.CharField(max_length=100, blank=True, null=True)
+    web_title = models.CharField(max_length=200, blank=True, null=True)
     web_price = models.DecimalField(max_digits=8, decimal_places=2, blank=True)
-    web_url = models.URLField(max_length=250)
-    web_image_url = models.URLField(max_length=250)
+    web_url = models.URLField(max_length=250, blank=True, null=True)
+    web_image_url = models.URLField(max_length=250, blank=True, null=True)
     created = models.TimeField(auto_now=True)
 
     def __str__(self):

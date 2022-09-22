@@ -20,7 +20,7 @@ from scraper import models, tasks, signals
 
 
 class ScrapEngine:
-    MATCH_SETTINGS = 0.80
+    MATCH_SETTINGS = 0.95
 
     async def scrap_request(self, session, task):
         async with session.get(task.url) as response:
@@ -28,8 +28,8 @@ class ScrapEngine:
 
         data = await self.prettify_response(html, task)
 
-        if task.email and data['result']['price']:
-            if await task.email_price_checker(data['result']['price']):
+        if task.email and data['price']:
+            if await task.email_price_checker(data['price']):
                 await self.send_async_signal(task, data)
         else:
             await task.self_save(data)
@@ -57,6 +57,9 @@ class ScrapEngine:
 
     async def prettify_response(self, data_to_prettify, task):
         def p_text(qs):
+            if qs is None:
+                return None
+
             return qs.get_text(strip=True)
 
         def p_decimal(qs):
@@ -74,9 +77,13 @@ class ScrapEngine:
             if qs is None:
                 return None
             try:
-                return qs[attr]
+                qsa = qs[attr]
+                if not qsa.startswith('/'):
+                    # TODO: support relative links.
+                    return qsa
+                return None
             except TypeError:
-                return ''
+                return None
 
         tag_soup = bs4.BeautifulSoup(data_to_prettify, 'lxml')
 
@@ -103,11 +110,11 @@ class ScrapEngine:
 
                     scrap_result.update({key: value})
                 return scrap_result
-        return None
+        return False
 
-    async def setup_task(self, tasks):
-        async with aiohttp.ClientSession(trust_env=True) as session:
-            tasks_to_run = (self.scrap_request(session, task) for task in tasks)
+    async def setup_task(self, ready_tasks):
+        async with aiohttp.ClientSession(trust_env=True, connector=aiohttp.TCPConnector(verify_ssl=False)) as session:
+            tasks_to_run = (self.scrap_request(session, task) for task in ready_tasks)
             await asyncio.gather(*tasks_to_run)
 
 
@@ -118,6 +125,7 @@ class Task:
     _: dataclasses.KW_ONLY
     data: dict = None
     url: str = None
+    bookstore_name: str = None
     querry_selectors: dict = None
     email: bool = None
     email_price: Decimal = None
@@ -129,6 +137,7 @@ class Task:
         if self.__class__.__base__ != object:
             super().__init__(self.user_input)
             self.url = self.bookstores_url
+            self.bookstore_name = self.__class__.__bases__[1].__qualname__
             self.querry_selectors = {
                 'BOOKSTORE_URL': self.bookstores_url,
                 'ALL_EBOOK_CONTAINER': self.ALL_EBOOK_CONTAINER,
@@ -139,14 +148,19 @@ class Task:
     async def self_save(self, data_from_bookstores):
         @sync_to_async
         def wrapper():
-
             ct = ContentType.objects.get(app_label='scraper', model='fasttaskinfo')
-            new_model = models.ScrapResult(
-                data=data_from_bookstores,
+            new_model = models.ScrapEbookResult(
                 content_type=ct,
-                object_id=self.owner_model_id
+                object_id=self.owner_model_id,
+                web_bookstore=self.bookstore_name,
+                web_author=data_from_bookstores['author'],
+                web_title=data_from_bookstores['title'],
+                web_price=data_from_bookstores['price'],
+                web_url=data_from_bookstores['url'],
+                web_image_url=data_from_bookstores['jpg']
             )
 
+            # new_model.save()
             try:
                 new_model.full_clean()
                 new_model.save()
@@ -183,8 +197,7 @@ class TaskManager:
             return self.email[2]
 
         new_core_model = models.FastTaskInfo(
-            task_type='fast',
-            user_ebook=self.user_input
+            user_input_search=self.user_input,
         )
 
         try:
@@ -209,10 +222,11 @@ class TaskManager:
 
         bases = [type('ReadyTask', mixin_inheritance, {}) for mixin_inheritance in mix_inheritances]
 
-        tasks = [asdict(mix_class(self.model_id, self.user_input, email=self.email[0], email_price=self.email[1]))
-                 for mix_class in bases]
+        tasks_as_dict = [
+            asdict(mix_class(self.model_id, self.user_input, email=self.email[0], email_price=self.email[1]))
+            for mix_class in bases]
 
-        return tasks
+        return tasks_as_dict
 
     @classmethod
     def create_email_task(cls, user_input, user_email, user_price):
