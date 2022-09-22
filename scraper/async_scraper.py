@@ -23,10 +23,9 @@ class ScrapEngine:
     MATCH_SETTINGS = 0.75
 
     async def scrap_request(self, session, task):
+        timeout = aiohttp.ClientTimeout(total=60)
         proxy = settings.PROXY_URL
-
-        async with session.get(task.url, proxy=proxy) as response:
-            # TODO: ServerDisconnectedError / ConnectionError
+        async with session.get(task.url, timeout=timeout, proxy=proxy) as response:
             html = await response.text()
 
         data = await self.prettify_response(html, task)
@@ -114,9 +113,10 @@ class ScrapEngine:
         return False
 
     async def setup_task(self, ready_tasks):
-        async with aiohttp.ClientSession(trust_env=True, connector=aiohttp.TCPConnector(verify_ssl=False)) as session:
+        async with aiohttp.ClientSession(trust_env=True) as session:
             tasks_to_run = (self.scrap_request(session, task) for task in ready_tasks)
-            await asyncio.gather(*tasks_to_run)
+            await asyncio.gather(*tasks_to_run, return_exceptions=True)
+            await session.close()
 
 
 @dataclass
@@ -163,7 +163,7 @@ class Task:
 
             # new_model.save()
             try:
-                new_model.full_clean()
+                # new_model.full_clean()
                 new_model.save()
             except ValidationError:
                 return None
@@ -276,6 +276,28 @@ class Empik:
         'price': {'qs': '.price.ta-price-tile', 'type': 'decimal'},
         'jpg': {'qs': '.lazy', 'type': 'attribute', 'attr': 'lazy-img'},
         'url': {'qs': '.seoTitle', 'type': 'attribute', 'attr': 'href'}
+    }
+
+    def __init__(self, user_input):
+        self.user_input = user_input
+        self.bookstores_url = self.get_url()
+
+    def get_url(self):
+        if len(self.user_input.split()) < 2:
+            return ''.join([self.BOOKSTORE_URL, self.user_input])
+        return ''.join([self.BOOKSTORE_URL, '%20'.join(self.user_input.split())])
+
+
+class Publio:
+    BOOKSTORE_URL = 'https://www.publio.pl/e-booki.html?keyword='
+    ALL_EBOOK_CONTAINER = '.listing__products-filter-result'
+    EBOOK_CONTAINER = '.v-popover.product-tail'
+    EBOOK_DETAILS = {
+        'author': {'qs': 'span[data-v-6045cf5e]', 'type': 'text'},
+        'title': {'qs': '.title', 'type': 'text'},
+        'price': {'qs': '.current', 'type': 'decimal'},
+        'jpg': {'qs': '', 'type': ''},
+        'url': {'qs': '', 'type': ''},
     }
 
     def __init__(self, user_input):

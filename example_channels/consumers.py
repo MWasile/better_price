@@ -5,18 +5,18 @@ from enum import Enum
 from asgiref.sync import sync_to_async
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
-from scraper.async_scraper import TaskManager
 from celery.result import AsyncResult
+from django.core.serializers.json import DjangoJSONEncoder
+
 from scraper.models import FastTaskInfo
-
-
-class Massage(Enum):
-    BOOKSTORES_NUMBER = 1
-    TASK_DATA = 2
-    END = 3
+from scraper import async_scraper as asr
 
 
 class EbookHelper:
+    class Massage(Enum):
+        BOOKSTORES_NUMBER = 1
+        TASK_DATA = 2
+        END = 3
 
     def __init__(self, consumer, data_from_user):
         self.consumer = consumer
@@ -29,19 +29,19 @@ class EbookHelper:
         return self
 
     async def __aexit__(self, *args, **kwargs):
-        await self.push_to_frontend(Massage.END)
+        await self.push_to_frontend(self.Massage.END)
 
     @sync_to_async
     def run_celery_scrap_task(self):
-        new_task = TaskManager(self.data_from_user['massage'])
-        self.scrap_owner_model_id = new_task.model_id
-        self.count_bookstores = len(new_task.tasks)
-        self.celery_task_id = new_task.run()
+        fast_task = asr.TaskManager(self.data_from_user['massage'])
+        self.scrap_owner_model_id = fast_task.model_id
+        self.count_bookstores = len(fast_task.tasks)
+        self.celery_task_id = fast_task.run()
 
     @database_sync_to_async
     def get_data_from_db(self):
         results_from_db = FastTaskInfo.objects.get(pk=self.scrap_owner_model_id).results.all()
-        data_to_push = [info_model.data for info_model in results_from_db]
+        data_to_push = [info_model.to_dict() for info_model in results_from_db]
         return data_to_push
 
     async def wait_until_celery_task_is_done(self):
@@ -55,8 +55,7 @@ class EbookHelper:
     async def push_to_frontend(self, massage_type, data=''):
         await self.consumer.send(text_data=json.dumps(
             {'massage': massage_type.value,
-             f'data': f'{data}'}
-        ))
+             f'data': data}, cls=DjangoJSONEncoder))
 
     async def recieve_management(self):
 
@@ -65,11 +64,11 @@ class EbookHelper:
         if self.celery_task_id is None:
             raise
 
-        await self.push_to_frontend(Massage.BOOKSTORES_NUMBER, data=self.count_bookstores)
+        await self.push_to_frontend(self.Massage.BOOKSTORES_NUMBER, data=self.count_bookstores)
 
         if await self.wait_until_celery_task_is_done():
             results = await self.get_data_from_db()
-            await self.push_to_frontend(Massage.TASK_DATA, data=results)
+            await self.push_to_frontend(self.Massage.TASK_DATA, data=results)
 
 
 class SimpleConsumer(AsyncWebsocketConsumer):

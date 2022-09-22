@@ -36,11 +36,20 @@ function organizeWebsocketRespone(data){
 
     switch (data_from_backend.massage){
         case 1:
+            console.log(data_from_backend.data)
             break;
         case 2:
             console.log(data_from_backend.data)
+
+            for (let x in data_from_backend.data){
+                console.log(typeof x)
+                console.log(x)
+                console.log('-------')
+            }
+
             break;
         case 3:
+            console.log(data_from_backend.data)
             break
         default:
             console.log('chuj tu nocuje')
