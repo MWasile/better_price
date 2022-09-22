@@ -3,6 +3,7 @@ from django.contrib.contenttypes.fields import GenericRelation, GenericForeignKe
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.conf import settings
+from django.forms import model_to_dict
 
 
 class BaseInfo(models.Model):
@@ -26,10 +27,10 @@ class FastTaskInfo(BaseInfo):
 class EmailTaskInfo(BaseInfo):
     user_price_alert = models.DecimalField(max_digits=8, decimal_places=2)
     user_email = models.EmailField()
-    email_send_status = models.BooleanField(default=False)
+    email_send_status = models.BooleanField(default=True)
 
     def mark_as_done(self):
-        setattr(self, 'email_send_status', True)
+        setattr(self, 'email_send_status', False)
         self.save()
 
 
@@ -48,3 +49,6 @@ class ScrapEbookResult(models.Model):
 
     def __str__(self):
         return f'{self.__class__.__name__}: Bookstore - {self.web_bookstore}'
+
+    def to_dict(self):
+        return model_to_dict(self, fields=['web_bookstore', 'web_author', 'web_title', 'web_price', 'web_url'])

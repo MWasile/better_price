@@ -20,10 +20,13 @@ from scraper import models, tasks, signals
 
 
 class ScrapEngine:
-    MATCH_SETTINGS = 0.95
+    MATCH_SETTINGS = 0.75
 
     async def scrap_request(self, session, task):
-        async with session.get(task.url) as response:
+        proxy = settings.PROXY_URL
+
+        async with session.get(task.url, proxy=proxy) as response:
+            # TODO: ServerDisconnectedError / ConnectionError
             html = await response.text()
 
         data = await self.prettify_response(html, task)
@@ -31,10 +34,9 @@ class ScrapEngine:
         if task.email and data['price']:
             if await task.email_price_checker(data['price']):
                 await self.send_async_signal(task, data)
-        else:
-            # TODO: don't save if data is too much incomplete
-            if data['title'] is not None:
-                await task.self_save(data)
+        if data:
+            # TODO: don't save if data is incomplete
+            await task.self_save(data)
 
     async def is_match(self, arg1, arg2):
         if not difflib.SequenceMatcher(None, arg1, arg2).ratio() > self.MATCH_SETTINGS:
@@ -44,13 +46,10 @@ class ScrapEngine:
     @staticmethod
     def send_signal(task, data):
         signals.email_success.send(
-            sender='aio',
-            task_id='XD',
+            sender='aioHttp',
             scrap_data={
-                'task_data': {
-                    'id': task.owner_model_id,
-                    'title': data['result']['title'],
-                }
+                'id': task.owner_model_id,
+                'task_info': data,
             })
         return True
 
@@ -173,7 +172,7 @@ class Task:
 
     async def email_price_checker(self, price_from_website):
         try:
-            if Decimal(price_from_website) > Decimal(self.email_price):
+            if Decimal(price_from_website) <= Decimal(self.email_price):
                 return True
             return False
         except decimal.InvalidOperation:

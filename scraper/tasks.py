@@ -25,7 +25,7 @@ def email_task():
     available_email_task = EmailTaskInfo.objects.filter(email_send_status=True)
 
     for task in available_email_task:
-        task_manager = acs.TaskManager(task.user_ebook, email_case=True, email_price=task.price,
+        task_manager = acs.TaskManager(task.user_input_search, email_case=True, email_price=task.user_price_alert,
                                        email_model_id=task.id)
         email_scrap_task.apply_async([task_manager.tasks])
 

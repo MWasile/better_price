@@ -172,6 +172,8 @@ CELERY_BEAT_SCHEDULE = {
 
 # SCRAPER CONFIG
 
+PROXY_URL = os.environ.get('PROXY_URL')
+
 SCRAPER_BOOKSTORES = [
     'Woblink',
     'Empik'
