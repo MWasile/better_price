@@ -9,8 +9,8 @@ class BaseInfo(models.Model):
     user_input_search = models.CharField(max_length=200)
     created = models.TimeField(auto_now=True)
     results = GenericRelation('ScrapEbookResult')
-    # search_for = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='%(class)s_related', blank=True, null=True,
-    #                                on_delete=models.PROTECT)
+    search_for = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='%(class)s_related', blank=True, null=True,
+                                   on_delete=models.PROTECT)
 
     class Meta:
         abstract = True

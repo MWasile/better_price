@@ -32,7 +32,9 @@ class ScrapEngine:
             if await task.email_price_checker(data['price']):
                 await self.send_async_signal(task, data)
         else:
-            await task.self_save(data)
+            # TODO: don't save if data is too much incomplete
+            if data['title'] is not None:
+                await task.self_save(data)
 
     async def is_match(self, arg1, arg2):
         if not difflib.SequenceMatcher(None, arg1, arg2).ratio() > self.MATCH_SETTINGS:
@@ -229,12 +231,12 @@ class TaskManager:
         return tasks_as_dict
 
     @classmethod
-    def create_email_task(cls, user_input, user_email, user_price):
+    def create_email_task(cls, user_input, user_email, user_price, user=None):
         new_email_task = models.EmailTaskInfo(
-            task_type='email',
-            user_ebook=user_input,
-            email=user_email,
-            price=user_price
+            user_input_search=user_input,
+            search_for=user,
+            user_price_alert=user_price,
+            user_email=user_email
         )
 
         try:
