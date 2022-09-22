@@ -12,7 +12,9 @@ def fast_scrap_task(self, task_list):
             task['owner_model_id'],
             task['user_input'],
             url=task['url'],
-            querry_selectors=task['querry_selectors']) for task in task_list]
+            querry_selectors=task['querry_selectors'],
+            bookstore_name=task['bookstore_name']
+        ) for task in task_list]
 
     engine = acs.ScrapEngine()
     asyncio.run(engine.setup_task(task_to_scrap))
@@ -20,7 +22,7 @@ def fast_scrap_task(self, task_list):
 
 @shared_task(queue='email_queue')
 def email_task():
-    available_email_task = EmailTaskInfo.objects.filter(status=True)
+    available_email_task = EmailTaskInfo.objects.filter(email_send_status=True)
 
     for task in available_email_task:
         task_manager = acs.TaskManager(task.user_ebook, email_case=True, email_price=task.price,
@@ -36,6 +38,7 @@ def email_scrap_task(task_list):
             task['user_input'],
             url=task['url'],
             querry_selectors=task['querry_selectors'],
+            bookstore_name=task['bookstore_name'],
             email=True,
             email_price=task['email_price']) for task in task_list]
 
