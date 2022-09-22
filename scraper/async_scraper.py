@@ -172,14 +172,8 @@ class Task:
         await wrapper()
 
     async def email_price_checker(self, price_from_website):
-
-        if price_from_website.find(',') != -1:
-            price_from_website = price_from_website.replace(',', '.')
-
-        pretty_price = "".join(char for char in price_from_website if char.isdigit() or char == '.')
-
         try:
-            if Decimal(pretty_price) > Decimal(self.email_price):
+            if Decimal(price_from_website) > Decimal(self.email_price):
                 return True
             return False
         except decimal.InvalidOperation:
