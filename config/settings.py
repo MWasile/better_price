@@ -176,7 +176,8 @@ PROXY_URL = os.environ.get('PROXY_URL')
 
 SCRAPER_BOOKSTORES = [
     'Woblink',
-    'Empik'
+    'Empik',
+    'Publio'
 ]
 
 # EMAIL
