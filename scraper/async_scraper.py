@@ -163,7 +163,7 @@ class Task:
 
             # new_model.save()
             try:
-                # new_model.full_clean()
+                new_model.full_clean()
                 new_model.save()
             except ValidationError:
                 return None
