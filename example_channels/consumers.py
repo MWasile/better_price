@@ -6,10 +6,12 @@ from asgiref.sync import sync_to_async
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
 from celery.result import AsyncResult
+from channels.layers import get_channel_layer
 from django.core.serializers.json import DjangoJSONEncoder
 
 from scraper.models import FastTaskInfo
 from scraper import async_scraper as asr
+from scraper import signals
 
 
 class EbookHelper:
@@ -18,14 +20,16 @@ class EbookHelper:
         TASK_DATA = 2
         END = 3
 
-    def __init__(self, consumer, data_from_user):
-        self.consumer = consumer
+    def __init__(self, channel_name, data_from_user):
+        self.channel_name = channel_name
+        self.channel_layer = None
         self.data_from_user = data_from_user
         self.celery_task_id = None
         self.count_bookstores = None
         self.scrap_owner_model_id = None
 
     async def __aenter__(self):
+        self.channel_layer = get_channel_layer()
         return self
 
     async def __aexit__(self, *args, **kwargs):
@@ -33,7 +37,7 @@ class EbookHelper:
 
     @sync_to_async
     def run_celery_scrap_task(self):
-        fast_task = asr.TaskManager(self.data_from_user['massage'])
+        fast_task = asr.TaskManager(self.data_from_user)
         self.scrap_owner_model_id = fast_task.model_id
         self.count_bookstores = len(fast_task.tasks)
         self.celery_task_id = fast_task.run()
@@ -53,9 +57,10 @@ class EbookHelper:
         return True
 
     async def push_to_frontend(self, massage_type, data=''):
-        await self.consumer.send(text_data=json.dumps(
-            {'massage': massage_type.value,
-             f'data': data}, cls=DjangoJSONEncoder))
+        await self.channel_layer.send(self.channel_name, {
+            "type": "frontend",
+            "text": f"{data}",
+        })
 
     async def recieve_management(self):
 
@@ -71,8 +76,15 @@ class EbookHelper:
             await self.push_to_frontend(self.Massage.TASK_DATA, data=results)
 
 
+async def help_runner(channel_name, data):
+    async with EbookHelper(channel_name, data) as helper:
+        await helper.recieve_management()
+
+
 class SimpleConsumer(AsyncWebsocketConsumer):
     async def connect(self):
+        print(self.channel_name)
+
         await self.accept()
 
     async def disconnect(self, code):
@@ -80,6 +92,7 @@ class SimpleConsumer(AsyncWebsocketConsumer):
 
     async def receive(self, text_data=None, **kwargs):
         data = json.loads(text_data)
+        signals.do_your_job.send(sender='X', channel_name=self.channel_name, user_input=data['massage'])
 
-        async with EbookHelper(self, data) as helper:
-            await helper.recieve_management()
+    async def frontend(self, event):
+        await self.send(text_data=json.dumps(event['text']))

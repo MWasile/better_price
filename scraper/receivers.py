@@ -1,9 +1,13 @@
+import asyncio
+
 from asgiref.sync import sync_to_async
 from django.dispatch import receiver
 from django.core.mail import send_mail
 
 from . import signals
 from . import models
+from example_channels import consumers
+from channels.layers import get_channel_layer
 
 
 @receiver(signals.email_success)
@@ -22,4 +26,16 @@ def email_sucess_manager(sender, scrap_data, **kwargs):
             task_model.mark_as_done()
 
 
+@receiver(signals.do_your_job)
+def do_your_job_manager(sender, channel_name, user_input, **kwargs):
+    channel_layer = get_channel_layer()
 
+    task = consumers.help_runner(channel_name, user_input)
+
+    x = channel_layer.send(f"{channel_name}", {
+        "type": "frontend",
+        "text": f"{user_input}",
+    })
+    loop = asyncio.get_event_loop()
+    loop.create_task(x)
+    loop.create_task(task)

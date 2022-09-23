@@ -33,7 +33,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
 function organizeWebsocketRespone(data){
     const data_from_backend = JSON.parse(data)
-
+    console.log(data)
     switch (data_from_backend.massage){
         case 1:
             console.log(data_from_backend.data)
