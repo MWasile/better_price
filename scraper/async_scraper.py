@@ -238,8 +238,7 @@ class TaskManager:
         try:
             new_email_task.full_clean()
             new_email_task.save()
-        except ValidationError as err:
-            raise err
+        except ValidationError:
             return False
         return new_email_task.id
 
