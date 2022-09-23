@@ -20,6 +20,20 @@
 </head>
 <body class="bg-slate-500">
 
+<div>
+    <a href="{% url 'dashboard:home' %}">DASHBOARD</a>
+</div>
+<div>
+    <a href="{% url 'users:login' %}">LOGIN</a>
+</div>
+<div>
+    <a href="{% url 'users:register' %}">REGISTER</a>
+</div>
+<div>
+    <a href="{% url 'home:home' %}">HOME</a>
+</div>
+
+
 
 {% block container %}{% endblock %}
 

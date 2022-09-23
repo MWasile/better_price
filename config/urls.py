@@ -25,6 +25,7 @@ urlpatterns = [
     path('api/', include('api.urls')),
     path('channels/', include('example_channels.urls')),
     path('user/', include('users.urls')),
+    path('dashboard/', include('dashboard.urls')),
 ]
 
 if settings.DEBUG:
