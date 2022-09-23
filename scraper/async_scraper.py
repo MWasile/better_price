@@ -25,17 +25,18 @@ class ScrapEngine:
     async def scrap_request(self, session, task):
         timeout = aiohttp.ClientTimeout(total=60)
         proxy = settings.PROXY_URL
+
         async with session.get(task.url, timeout=timeout, proxy=proxy) as response:
             html = await response.text()
 
-        data = await self.prettify_response(html, task)
+            data = await self.prettify_response(html, task)
 
-        if task.email and data['price']:
-            if await task.email_price_checker(data['price']):
-                await self.send_async_signal(task, data)
-        if data:
-            # TODO: don't save if data is incomplete
-            await task.self_save(data)
+            if task.email and data['price']:
+                if await task.email_price_checker(data['price']):
+                    await self.send_async_signal(task, data)
+            if data:
+                # TODO: don't save if data is incomplete
+                await task.self_save(data)
 
     async def is_match(self, arg1, arg2):
         if not difflib.SequenceMatcher(None, arg1, arg2).ratio() > self.MATCH_SETTINGS:
