@@ -227,18 +227,19 @@ class TaskManager:
         return tasks_as_dict
 
     @classmethod
-    def create_email_task(cls, user_input, user_email, user_price, user=None):
+    def create_email_task(cls, user_input, user_email, user_price, user_id=None):
         new_email_task = models.EmailTaskInfo(
             user_input_search=user_input,
-            search_for=user,
+            user_email=user_email,
             user_price_alert=user_price,
-            user_email=user_email
+            search_for_id=user_id
         )
 
         try:
             new_email_task.full_clean()
             new_email_task.save()
-        except ValidationError:
+        except ValidationError as err:
+            raise err
             return False
         return new_email_task.id
 
