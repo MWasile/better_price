@@ -181,8 +181,9 @@ class Task:
 
 
 class TaskManager:
-    def __init__(self, user_input, email_case=False, email_price=False, email_model_id=None):
+    def __init__(self, user_input, email_case=False, email_price=False, email_model_id=None, user=None):
         self.user_input = user_input
+        self.user = user
         self.email = email_case, email_price, email_model_id
         self.model_id = self._pin_model()
         self.tasks = self._pin_task()
@@ -194,6 +195,7 @@ class TaskManager:
 
         new_core_model = models.FastTaskInfo(
             user_input_search=self.user_input,
+            search_for=self.user
         )
 
         try:

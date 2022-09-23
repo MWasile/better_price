@@ -20,10 +20,11 @@ class EbookHelper:
         TASK_DATA = 2
         END = 3
 
-    def __init__(self, channel_name, data_from_user):
+    def __init__(self, channel_name, data_from_user, user):
         self.channel_name = channel_name
         self.channel_layer = None
         self.data_from_user = data_from_user
+        self.user = user
         self.celery_task_id = None
         self.count_bookstores = None
         self.scrap_owner_model_id = None
@@ -37,7 +38,7 @@ class EbookHelper:
 
     @sync_to_async
     def run_celery_scrap_task(self):
-        fast_task = asr.TaskManager(self.data_from_user)
+        fast_task = asr.TaskManager(self.data_from_user, user=self.user)
         self.scrap_owner_model_id = fast_task.model_id
         self.count_bookstores = len(fast_task.tasks)
         self.celery_task_id = fast_task.run()
@@ -76,8 +77,8 @@ class EbookHelper:
             await self.push_to_frontend(self.Massage.TASK_DATA, data=results)
 
 
-async def help_runner(channel_name, data):
-    async with EbookHelper(channel_name, data) as helper:
+async def help_runner(channel_name, data, user):
+    async with EbookHelper(channel_name, data, user) as helper:
         await helper.recieve_management()
 
 
@@ -91,7 +92,14 @@ class SimpleConsumer(AsyncWebsocketConsumer):
 
     async def receive(self, text_data=None, **kwargs):
         data = json.loads(text_data)
-        signals.do_your_job.send(sender='X', channel_name=self.channel_name, user_input=data['massage'])
+
+        login_user = self.scope["user"]
+
+        if not login_user.is_authenticated:
+            login_user = None
+
+        signals.do_your_job.send(sender='X', channel_name=self.channel_name, user_input=data['massage'],
+                                 user=login_user)
 
     async def frontend(self, event):
         await self.send(text_data=json.dumps(event['text']))

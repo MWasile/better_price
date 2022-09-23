@@ -27,15 +27,17 @@ def email_sucess_manager(sender, scrap_data, **kwargs):
 
 
 @receiver(signals.do_your_job)
-def do_your_job_manager(sender, channel_name, user_input, **kwargs):
+def do_your_job_manager(sender, channel_name, user_input, user=None, **kwargs):
     channel_layer = get_channel_layer()
 
-    task = consumers.help_runner(channel_name, user_input)
-
-    x = channel_layer.send(f"{channel_name}", {
+    massage_to_frontend = channel_layer.send(f"{channel_name}", {
         "type": "frontend",
         "text": f"{user_input}",
     })
+
+    go_scrap = consumers.help_runner(channel_name, user_input, user)
+
     loop = asyncio.get_event_loop()
-    loop.create_task(x)
-    loop.create_task(task)
+
+    t1 = loop.create_task(massage_to_frontend)
+    t2 = loop.create_task(go_scrap)
