@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+
+{% block container %}
+    {% for detail in details %}
+
+        <div class="Author">Bookstore: {{ detail.web_bookstore }}</div>
+        <div class="Author">Author: {{ detail.web_author }}</div>
+        <div class="Author">Price: {{ detail.web_price }}</div>
+
+    {% endfor %}
+
+{% endblock %}

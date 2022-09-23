@@ -1,13 +1,13 @@
 {% extends 'base.html' %}
 
 {% block container %}
-
 <h1>Your history!</h1>
 
     <div class="flex gap-4">
     {% for ebook in user_results %}
         <div>
-            {{ ebook.user_input_search }}
+
+            <a href="{% url 'dashboard:detail' ebook.id %}"> {{ ebook.user_input_search }}</a>
         </div>
     {% endfor %}
     </div>

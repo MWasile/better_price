@@ -5,7 +5,7 @@ from django.views.generic import TemplateView, DetailView, ListView
 from scraper import models
 
 
-class DashboardHome(ListView):
+class DashboardHistory(ListView):
     model = models.FastTaskInfo
     context_object_name = 'user_results'
     template_name = 'dashboard/dashboard_home.html'
@@ -18,3 +18,13 @@ class DashboardHome(ListView):
 
     def get_queryset(self):
         return models.FastTaskInfo.objects.filter(search_for=self.request.user.id)
+
+
+class ResultsDetail(ListView):
+    model = models.ScrapEbookResult
+    template_name = 'dashboard/details.html'
+    context_object_name = 'details'
+
+    def get_queryset(self):
+        pk = self.kwargs.get('pk')
+        return models.ScrapEbookResult.objects.filter(object_id=pk)
