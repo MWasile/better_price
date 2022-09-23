@@ -84,7 +84,6 @@ async def help_runner(channel_name, data):
 class SimpleConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         print(self.channel_name)
-
         await self.accept()
 
     async def disconnect(self, code):
