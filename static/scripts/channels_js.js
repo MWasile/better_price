@@ -33,27 +33,53 @@ document.addEventListener("DOMContentLoaded", function() {
 
 function organizeWebsocketRespone(data){
     const data_from_backend = JSON.parse(data)
-    console.log(data)
-    switch (data_from_backend.massage){
-        case 1:
-            console.log(data_from_backend.data)
+    console.log(data_from_backend)
+    switch (data_from_backend.category){
+        case '1':
+            loadingWheel(true)
+            clearTrash()
             break;
-        case 2:
-            console.log(data_from_backend.data)
-
-            for (let x in data_from_backend.data){
-                console.log(typeof x)
-                console.log(x)
-                console.log('-------')
-            }
-
+        case '2':
+            const bookstores = (JSON.parse(data_from_backend.text))
+            bookstores.forEach((es) => {
+                spawnResult(es)
+            })
+            loadingWheel(false)
             break;
-        case 3:
-            console.log(data_from_backend.data)
-            break
+        case '3':
+            // console.log(data_from_backend)
         default:
             console.log('chuj tu nocuje')
     }
 
 }
 
+
+function spawnResult(bookstore){
+    const container = document.createElement('div');
+
+    for (const [key, value] of Object.entries(bookstore)){
+        let aItem=document.createElement('a')
+        aItem.innerHTML= `${key}: ${value}`
+        container.appendChild(aItem)
+    }
+
+    const site_place = document.querySelector('#results')
+    site_place.appendChild(container)
+}
+
+function loadingWheel(flag){
+    let spiner = document.querySelector('#spinner')
+    if (flag === true){
+        spiner.classList.remove('invisible')
+    }else{
+        spiner.classList.add('invisible')
+    }
+}
+function clearTrash(){
+        let trash = document.querySelector('#results')
+
+    while (trash.firstChild){
+        trash.removeChild(trash.firstChild)
+    }
+}

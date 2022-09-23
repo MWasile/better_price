@@ -47,7 +47,8 @@ class EbookHelper:
     def get_data_from_db(self):
         results_from_db = FastTaskInfo.objects.get(pk=self.scrap_owner_model_id).results.all()
         data_to_push = [info_model.to_dict() for info_model in results_from_db]
-        return data_to_push
+
+        return json.dumps(data_to_push, cls=DjangoJSONEncoder)
 
     async def wait_until_celery_task_is_done(self):
         res = AsyncResult(str(self.celery_task_id))
@@ -60,7 +61,8 @@ class EbookHelper:
     async def push_to_frontend(self, massage_type, data=''):
         await self.channel_layer.send(self.channel_name, {
             "type": "frontend",
-            "text": f"{data}",
+            "category": f"{massage_type.value}",
+            "text": data,
         })
 
     async def recieve_management(self):
@@ -102,4 +104,4 @@ class SimpleConsumer(AsyncWebsocketConsumer):
                                  user=login_user)
 
     async def frontend(self, event):
-        await self.send(text_data=json.dumps(event['text']))
+        await self.send(text_data=json.dumps(event))
