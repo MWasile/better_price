@@ -35,8 +35,6 @@ function organizeWebsocketRespone(data) {
 
     switch (data_from_backend.category) {
         case '1':
-            loadingWheel(true)
-            clearTrash()
             break;
         case '2':
             const bookstores = (JSON.parse(data_from_backend.text))
@@ -45,7 +43,6 @@ function organizeWebsocketRespone(data) {
                 const x = new Email(es, data_from_backend.user)
                 x.run()
             })
-            loadingWheel(false)
             break;
         case '3':
         // console.log(data_from_backend)
@@ -128,8 +125,6 @@ class Email{
     }
     run(){
         this.mainView()
-        this.setAlertButton()
         this.render()
-        this.eventSetter()
     }
 }

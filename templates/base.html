@@ -14,36 +14,112 @@
     {% endblock %}
 
     {% block scripts %}
-{#        <script src="{% static 'scripts/bootstrap.min.js' %}"></script>#}
+        {#        <script src="{% static 'scripts/bootstrap.min.js' %}"></script>#}
         <script src="https://cdn.tailwindcss.com"></script>
+        <script src="{% static '/scripts/channels_js.js' %}"></script>
     {% endblock %}
 </head>
-<body class="bg-slate-500">
 
-<div class="flex gap-4 mb-4">
-    <div>
-        <a href="{% url 'dashboard:home' %}">DASHBOARD</a>
+<body class="bg-gray-900 font-sans leading-normal tracking-normal">
+{#<div class="flex md:flex-row-reverse flex-wrap">#}
+
+    <!--Main Content-->
+{#    <div class="w-auto md:auto bg-gray-100">#}
+{#        <div class="container bg-gray-100 pt-16 px-6">#}
+    <div class="">
+            {% block container %}{% endblock %}
+{#        </div>#}
     </div>
-    <div>
-        <a href="{% url 'users:login' %}">LOGIN</a>
-    </div>
-    <div>
-        <a href="{% url 'users:register' %}">REGISTER</a>
-    </div>
-    <div>
-        <a href="{% url 'home:home' %}">HOME</a>
-    </div>
-    <div>
-        <a href="{% url 'example_channels:home' %}">CHANNELS</a>
+
+    <!--Sidebar-->
+    <div class="w-full md:w-44 bg-gray-900 md:bg-gray-900 text-center fixed bottom-0 md:pt-8 md:top-0 md:left-0 h-20 md:h-screen md:border-r-4 md:border-gray-600">
+        <div class="md:relative mx-auto lg:float-right lg:px-6">
+            <ul class="list-reset flex flex-row md:flex-col text-center md:text-left">
+                <li class="mr-3 flex-1" id="link-one">
+
+
+                    <a href="{% url 'example_channels:home' %}"
+                       class="block py-1 md:py-3 pl-1 align-middle text-gray-800 no-underline hover:text-pink-500 border-b-2 border-gray-800 md:border-gray-900 hover:border-pink-500">
+                        {% if  request.path == '/channels/' %}
+
+                            <i class="fas fa-link pr-0 md:pr-3 text-pink-500"></i><span
+                                class="pb-1 md:pb-0 text-xs md:text-base text-white md:font-bold block md:inline-block">
+                            Search Ebook</span>
+
+                        {% else %}
+
+                            <i class="fas fa-link pr-0 md:pr-3"></i>
+                            <span class="pb-1 md:pb-0 text-xs md:text-base text-gray-600 md:text-gray-400 block md:inline-block">
+                                Search Ebook</span>
+
+                        {% endif %}
+
+                    </a>
+                </li>
+
+                <li class="mr-3 flex-1">
+                    <a href="{% url 'users:login' %}"
+                       class="block py-1 md:py-3 pl-1 align-middle text-gray-800 no-underline hover:text-pink-500 border-b-2 border-gray-800 md:border-gray-900 hover:border-pink-500">
+                        {% if  request.path == '/user/login' %}
+
+                            <i class="fas fa-link pr-0 md:pr-3 text-pink-500"></i><span
+                                class="pb-1 md:pb-0 text-xs md:text-base text-white md:font-bold block md:inline-block">
+                                Login</span>
+
+                        {% else %}
+
+                            <i class="fas fa-link pr-0 md:pr-3"></i>
+                            <span class="pb-1 md:pb-0 text-xs md:text-base text-gray-600 md:text-gray-400 block md:inline-block">
+                                    Login</span>
+
+                        {% endif %}
+
+                    </a>
+                </li>
+                <li class="mr-3 flex-1">
+                    <a href="{% url 'users:register' %}"
+                       class="block py-1 md:py-3 pl-1 align-middle text-gray-800 no-underline hover:text-pink-500 border-b-2 border-gray-800 md:border-gray-900 hover:border-pink-500">
+                        {% if  request.path == '/user/register' %}
+
+                            <i class="fas fa-link pr-0 md:pr-3 text-pink-500"></i><span
+                                class="pb-1 md:pb-0 text-xs md:text-base text-white md:font-bold block md:inline-block">
+                                Register</span>
+
+                        {% else %}
+
+                            <i class="fas fa-link pr-0 md:pr-3"></i>
+                            <span class="pb-1 md:pb-0 text-xs md:text-base text-gray-600 md:text-gray-400 block md:inline-block">
+                                    Register</span>
+
+                        {% endif %}
+
+                    </a>
+                </li>
+
+                <li class="mr-3 flex-1">
+                    <a href="{% url 'dashboard:home' %}"
+                       class="block py-1 md:py-3 pl-1 align-middle text-gray-800 no-underline hover:text-pink-500 border-b-2 border-gray-800 md:border-gray-900 hover:border-pink-500">
+                        {% if  request.path == '/dashboard/home' %}
+
+                            <i class="fas fa-link pr-0 md:pr-3 text-pink-500"></i><span
+                                class="pb-1 md:pb-0 text-xs md:text-base text-white md:font-bold block md:inline-block">
+                                Dashboard</span>
+
+                        {% else %}
+
+                            <i class="fas fa-link pr-0 md:pr-3"></i>
+                            <span class="pb-1 md:pb-0 text-xs md:text-base text-gray-600 md:text-gray-400 block md:inline-block">
+                                    Dashboard</span>
+
+                        {% endif %}
+
+                    </a>
+                </li>
+            </ul>
+        </div>
     </div>
 </div>
-
-
-{% block container %}{% endblock %}
-
-
-
-
-
 </body>
+
+
 </html>

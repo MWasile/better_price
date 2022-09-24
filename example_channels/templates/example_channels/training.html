@@ -1,33 +1,33 @@
-{% include 'base.html' %}
+{% extends 'base.html' %}
 {% load static %}
-
-{% block scripts %}
-     <script src="{% static '/scripts/channels_js.js' %}"></script>
-{% endblock %}
 
 
 {% block container %}
-
-
-    <div class="h-3/4 w-1/2 flex flex-row mt-2 ml-2">
+    <div class="flex items-start p-4 mt-12 mx-auto lg:px-12 lg:w-3/5 gap-2">
         <div class="user-input w-3/4">
-            <input type="text" id="user-input" class="bg-gray-200 appearance-none border-2 border-gray-200 rounded w-full py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-purple-500">
-{#            <button type="submit" id="user-btn" class="shadow bg-purple-500 hover:bg-purple-400 focus:shadow-outline focus:outline-none text-white font-bold py-2 px-4 rounded">Szukaj książki</button>#}
+            <input type="text" id="user-input"
+                   class="placeholder-gray-900 bg-gray-900 appearance-none border-2 border-gray-500 rounded-lg w-full py-2 px-4 text-gray-300 leading-tight focus:outline-none focus:bg-grey-500">
         </div>
-        <button type="submit" id="user-btn" class="shadow bg-purple-500 hover:bg-purple-400 focus:shadow-outline focus:outline-none text-white font-bold py-2 px-4 rounded">Search</button>
+        <button type="submit" id="user-btn"
+                class="bg-purple-500 hover:bg-purple-400 focus:shadow-outline focus:outline-none text-white font-bold py-2 px-4 rounded-lg focus:border-blue-500">
+            Search
+        </button>
     </div>
 
-    <div class="h-3/4 w-1/2 flex flex-col mt-2 ml-2 items-center">
-        <div class="spinner invisible" id="spinner">
-            <div class="loader"></div>
-        </div>
-        <div class="spinner invisible">
-            <div class="loader"></div>
+    <div id="results" class="flex items-start p-4 mt-12 mx-auto lg:px-12 lg:w-3/5 gap-2">
+        <div class="flex justify-start">
+          <div class="flex flex-col md:flex-row md:max-w-xl rounded-lg bg-white shadow-lg">
+            <img class=" w-full max-h-48 object-cover md:w-48 rounded-t-lg md:rounded-none md:rounded-l-lg" src="https://mdbootstrap.com/wp-content/uploads/2020/06/vertical.jpg" alt="" />
+            <div class="p-6 flex flex-col justify-start">
+              <h5 class="text-gray-900 text-xl font-medium mb-2">Card title</h5>
+              <p class="text-gray-700 text-base mb-4">
+                This is a wider card with supporting text below as a natural lead-in to additional content. This content is a little bit longer.
+              </p>
+              <p class="text-gray-600 text-xs">Last updated 3 mins ago</p>
+            </div>
+          </div>
         </div>
     </div>
 
-    <div id="results" class="mt-4 gap-4 space-x-2">
-
-    </div>
-
+    <div id="results"></div>
 {% endblock %}
