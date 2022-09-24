@@ -1,4 +1,5 @@
 import pytest
+from example_channels import consumers
 
 
 @pytest.fixture(scope='function')
@@ -10,3 +11,14 @@ def user(db, django_user_model):
 def logged_user(user, client):
     client.force_login(user)
     return client
+
+
+@pytest.fixture
+def cheated_ctx():
+    """Overiding exit class."""
+
+    class cheated(consumers.EbookHelper):
+        async def __aexit__(self, exc_type, exc_val, exc_tb):
+            return
+
+    return cheated
