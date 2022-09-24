@@ -51,4 +51,5 @@ class ScrapEbookResult(models.Model):
         return f'{self.__class__.__name__}: Bookstore - {self.web_bookstore}'
 
     def to_dict(self):
-        return model_to_dict(self, fields=['web_bookstore', 'web_author', 'web_title', 'web_price', 'web_url'])
+        return model_to_dict(self, fields=['web_bookstore', 'web_author', 'web_title', 'web_price', 'web_url',
+                                           'web_image_url'])
