@@ -25,6 +25,7 @@ class EbookHelper:
         self.channel_layer = None
         self.data_from_user = data_from_user
         self.user = user
+        self.user_auth = user.is_authenticated if user is not None else False
         self.celery_task_id = None
         self.count_bookstores = None
         self.scrap_owner_model_id = None
@@ -63,6 +64,7 @@ class EbookHelper:
             "type": "frontend",
             "category": f"{massage_type.value}",
             "text": data,
+            "user": self.user_auth
         })
 
     async def recieve_management(self):
