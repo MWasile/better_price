@@ -22,7 +22,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
         ebookSocket.send(JSON.stringify({
-            'massage': `${user_input}`
+            'message': `${user_input}`
         }));
 
     });
@@ -32,7 +32,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 function organizeWebsocketRespone(data) {
     const data_from_backend = JSON.parse(data)
-    console.log(data_from_backend)
+
     switch (data_from_backend.category) {
         case '1':
             clearTrash()
@@ -50,7 +50,7 @@ function organizeWebsocketRespone(data) {
         case '3':
         // console.log(data_from_backend)
         default:
-            console.log('chuj tu nocuje')
+            break;
     }
 
 }

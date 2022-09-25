@@ -15,7 +15,7 @@ from scraper import signals
 
 
 class EbookHelper:
-    class Massage(Enum):
+    class Message(Enum):
         BOOKSTORES_NUMBER = 1
         TASK_DATA = 2
         END = 3
@@ -36,7 +36,7 @@ class EbookHelper:
         return self
 
     async def __aexit__(self, *args, **kwargs):
-        await self.push_to_frontend(self.Massage.END)
+        await self.push_to_frontend(self.Message.END)
 
     @sync_to_async
     def run_celery_scrap_task(self):
@@ -60,10 +60,10 @@ class EbookHelper:
 
         return True
 
-    async def push_to_frontend(self, massage_type, data=''):
+    async def push_to_frontend(self, message_type, data=''):
         await self.channel_layer.send(self.channel_name, {
             "type": "frontend",
-            "category": f"{massage_type.value}",
+            "category": f"{message_type.value}",
             "text": data,
             "user": self.user_auth,
             "mail": self.user_email
@@ -76,11 +76,11 @@ class EbookHelper:
         if self.celery_task_id is None:
             raise
 
-        await self.push_to_frontend(self.Massage.BOOKSTORES_NUMBER, data=self.count_bookstores)
+        await self.push_to_frontend(self.Message.BOOKSTORES_NUMBER, data=self.count_bookstores)
 
         if await self.wait_until_celery_task_is_done():
             results = await self.get_data_from_db()
-            await self.push_to_frontend(self.Massage.TASK_DATA, data=results)
+            await self.push_to_frontend(self.Message.TASK_DATA, data=results)
 
 
 async def help_runner(channel_name, data, user):
@@ -104,7 +104,7 @@ class SimpleConsumer(AsyncWebsocketConsumer):
         if not login_user.is_authenticated:
             login_user = None
 
-        signals.do_your_job.send(sender='X', channel_name=self.channel_name, user_input=data['massage'],
+        signals.do_your_job.send(sender='X', channel_name=self.channel_name, user_input=data['message'],
                                  user=login_user)
 
     async def frontend(self, event):
