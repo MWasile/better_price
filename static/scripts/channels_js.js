@@ -35,14 +35,17 @@ function organizeWebsocketRespone(data) {
 
     switch (data_from_backend.category) {
         case '1':
+            clearTrash()
+            loadingWheel(true)
             break;
         case '2':
+
             const bookstores = (JSON.parse(data_from_backend.text))
             bookstores.forEach((es) => {
-                // spawnResult(es)
                 const x = new Email(es, data_from_backend.user)
                 x.run()
             })
+            loadingWheel(false)
             break;
         case '3':
         // console.log(data_from_backend)
@@ -70,7 +73,7 @@ function clearTrash() {
     }
 }
 
-class Email{
+class Email {
     constructor(bookStore, user) {
         this.element = bookStore
         this.ebookName = bookStore.web_bookstore
@@ -82,38 +85,42 @@ class Email{
         this.user = user
         this.containerToReneder = document.createElement('div')
     }
-    setAlertButton(){
+
+    setAlertButton() {
         const newBtn = document.createElement('button')
         newBtn.innerHTML = 'Price Alert!'
         return newBtn
     }
-    mainView(){
+
+    mainView() {
         const container = document.createElement('div');
 
         for (const [key, value] of Object.entries(this.element)) {
             let aItem = document.createElement('a')
             aItem.innerHTML = `${key}: ${value}`
             container.appendChild(aItem)
-            }
+        }
         container.appendChild(this.setAlertButton())
         this.containerToReneder.appendChild(container)
     }
-    eventSetter(){
-        if (this.user){
+
+    eventSetter() {
+        if (this.user) {
             console.log('True')
             // add event to btn -> api
-        }else{
+        } else {
             console.log('false')
-        //    render form
+            //    render form
         }
 
     }
-    render(){
+
+    render() {
         const site_place = document.querySelector('#results')
         site_place.appendChild(this.containerToReneder)
     }
 
-    creaate_element(){
+    creaate_element() {
         const divOne = document.createElement('div')
         const divTwo = document.createElement('div')
         const img = document.createElement('img')
@@ -122,12 +129,13 @@ class Email{
         const pOne = document.createElement('p')
         const pTwo = document.createElement('p')
         const mainDiv = document.createElement('div')
+        const btn = document.createElement('a')
 
         divOne.className = 'flex justify-start'
         divTwo.className = 'flex flex-col md:flex-row md:max-w-xl rounded-lg bg-gray-800 shadow-lg'
-        img.className = 'w-full max-h-48 object-cover md:w-48 rounded-t-lg md:rounded-none md:rounded-l-lg'
+        img.className = 'w-full max-h-48 object-fill md:w-48 rounded-t-lg md:rounded-none md:rounded-l-lg'
 
-        if (this.ebookImage){
+        if (this.ebookImage) {
             img.src = this.ebookImage
         }
         divThree.className = 'p-6 flex flex-col justify-start'
@@ -139,10 +147,14 @@ class Email{
         pTwo.innerHTML = this.ebookAuthor
         mainDiv.className = 'flex items-start p-4 mt-12 mx-auto lg:px-12 lg:w-3/5 gap-2'
 
+        btn.href = this.ebookUrl
+        btn.innerHTML = `Go to ${this.ebookName}!`
 
         divThree.appendChild(h5)
         divThree.appendChild(pOne)
         divThree.appendChild(pTwo)
+        divThree.appendChild(btn)
+
 
         divTwo.appendChild(img)
         divTwo.appendChild(divThree)
@@ -157,7 +169,7 @@ class Email{
     }
 
 
-    run(){
+    run() {
         console.log(this.element)
         // this.mainView()
         // this.render()

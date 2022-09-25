@@ -35,7 +35,6 @@ class ScrapEngine:
                 if await task.email_price_checker(data['price']):
                     await self.send_async_signal(task, data)
             if data:
-                # TODO: don't save if data is incomplete
                 await task.self_save(data)
 
     async def is_match(self, arg1, arg2):
@@ -79,12 +78,17 @@ class ScrapEngine:
                 return None
             try:
                 qsa = qs[attr]
-                if not qsa.startswith('/'):
-                    # TODO: support relative links.
-                    return qsa
-                return None
+                return qsa
             except TypeError:
                 return None
+            except KeyError:
+                return None
+
+        def p_rel_path(qs, item):
+            attr = p_attr(qs, item['attr'])
+            if attr is not None:
+                return item['base'] + attr
+            return None
 
         tag_soup = bs4.BeautifulSoup(data_to_prettify, 'lxml')
 
@@ -106,6 +110,8 @@ class ScrapEngine:
                             value = p_decimal(ebook.select_one(detail['qs']))
                         case 'attribute':
                             value = p_attr(ebook.select_one(detail['qs']), detail['attr'])
+                        case 'rel':
+                            value = p_rel_path(ebook.select_one(detail['qs']), detail)
                         case _:
                             value = ""
 
@@ -278,7 +284,7 @@ class Empik:
         'title': {'qs': '.ta-product-title', 'type': 'text'},
         'price': {'qs': '.price.ta-price-tile', 'type': 'decimal'},
         'jpg': {'qs': '.lazy', 'type': 'attribute', 'attr': 'lazy-img'},
-        'url': {'qs': '.seoTitle', 'type': 'attribute', 'attr': 'href'}
+        'url': {'qs': '.seoTitle', 'type': 'rel', 'attr': 'href', 'base': 'https://www.empik.com'}
     }
 
     def __init__(self, user_input):
@@ -300,7 +306,7 @@ class Publio:
         'title': {'qs': '.title', 'type': 'text'},
         'price': {'qs': '.current', 'type': 'decimal'},
         'jpg': {'qs': '', 'type': ''},
-        'url': {'qs': '', 'type': ''},
+        'url': {'qs': '.img-wrapper', 'type': 'rel', 'attr': 'href', 'base': 'https://www.publio.pl'},
     }
 
     def __init__(self, user_input):
