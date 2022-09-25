@@ -75,7 +75,6 @@ function clearTrash() {
 
 class Email {
     constructor(bookStore, user) {
-        this.element = bookStore
         this.ebookName = bookStore.web_bookstore
         this.ebookAuthor = bookStore.web_author
         this.ebookTitle = bookStore.web_title
@@ -83,42 +82,8 @@ class Email {
         this.ebookUrl = bookStore.web_url
         this.ebookImage = bookStore.web_image_url
         this.user = user
-        this.containerToReneder = document.createElement('div')
     }
 
-    setAlertButton() {
-        const newBtn = document.createElement('button')
-        newBtn.innerHTML = 'Price Alert!'
-        return newBtn
-    }
-
-    mainView() {
-        const container = document.createElement('div');
-
-        for (const [key, value] of Object.entries(this.element)) {
-            let aItem = document.createElement('a')
-            aItem.innerHTML = `${key}: ${value}`
-            container.appendChild(aItem)
-        }
-        container.appendChild(this.setAlertButton())
-        this.containerToReneder.appendChild(container)
-    }
-
-    eventSetter() {
-        if (this.user) {
-            console.log('True')
-            // add event to btn -> api
-        } else {
-            console.log('false')
-            //    render form
-        }
-
-    }
-
-    render() {
-        const site_place = document.querySelector('#results')
-        site_place.appendChild(this.containerToReneder)
-    }
 
     creaate_element() {
         const divOne = document.createElement('div')
@@ -165,14 +130,10 @@ class Email {
         const result = document.querySelector('#results')
         result.appendChild(mainDiv)
 
-        console.log(this.ebookImage)
+
     }
 
-
     run() {
-        console.log(this.element)
-        // this.mainView()
-        // this.render()
         this.creaate_element()
     }
 }

@@ -1,7 +1,6 @@
-from django.contrib.auth import authenticate
-from django.shortcuts import render, redirect
+from django.shortcuts import redirect
 from django.urls import reverse_lazy
-from django.views.generic import TemplateView, DetailView, ListView
+from django.views.generic import ListView
 from scraper import models
 
 

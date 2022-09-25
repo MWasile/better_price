@@ -1,5 +1,4 @@
 from django.contrib.auth import authenticate, login
-from django.shortcuts import redirect
 from django.urls import reverse_lazy
 from django.views.generic import FormView
 from . import forms
