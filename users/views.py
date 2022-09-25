@@ -7,7 +7,7 @@ from . import forms
 class RegistrationView(FormView):
     form_class = forms.RegistrationForm
     template_name = 'users/registration.html'
-    success_url = reverse_lazy('home:home')
+    success_url = reverse_lazy('users:login')
 
     def form_valid(self, form):
         if form.is_valid():
@@ -20,7 +20,7 @@ class RegistrationView(FormView):
 class LoginView(FormView):
     form_class = forms.LoginForm
     template_name = 'users/login.html'
-    success_url = reverse_lazy('home:home')
+    success_url = reverse_lazy('example_channels:home')
 
     def form_valid(self, form):
         username = form.cleaned_data.get('username')
