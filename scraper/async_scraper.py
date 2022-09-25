@@ -24,9 +24,9 @@ class ScrapEngine:
 
     async def scrap_request(self, session, task):
         timeout = aiohttp.ClientTimeout(total=60)
-        # proxy = settings.PROXY_URL
+        proxy = settings.PROXY_URL
 
-        async with session.get(task.url, timeout=timeout) as response:
+        async with session.get(task.url, proxy=proxy, timeout=timeout) as response:
             html = await response.text()
 
             data = await self.prettify_response(html, task)

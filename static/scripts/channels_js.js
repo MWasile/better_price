@@ -32,7 +32,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 function organizeWebsocketRespone(data) {
     const data_from_backend = JSON.parse(data)
-
+    console.log(data_from_backend)
     switch (data_from_backend.category) {
         case '1':
             clearTrash()
@@ -132,7 +132,7 @@ class Email {
         const btn = document.createElement('a')
 
         divOne.className = 'flex justify-start'
-        divTwo.className = 'flex flex-col md:flex-row md:max-w-xl rounded-lg bg-gray-800 shadow-lg'
+        divTwo.className = 'flex flex-col md:flex-row md:max-w-xl rounded-lg bg-gray-400 shadow-lg'
         img.className = 'w-full max-h-48 object-fill md:w-48 rounded-t-lg md:rounded-none md:rounded-l-lg'
 
         if (this.ebookImage) {

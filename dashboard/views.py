@@ -9,7 +9,7 @@ class DashboardHistory(ListView):
     model = models.FastTaskInfo
     context_object_name = 'user_results'
     template_name = 'dashboard/dashboard_home.html'
-    paginate_by = 2
+    paginate_by = 5
 
     def get(self, request, *args, **kwargs):
         if not request.user.is_authenticated:

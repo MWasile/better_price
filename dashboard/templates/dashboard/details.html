@@ -1,11 +1,29 @@
 {% extends 'base.html' %}
+{% load static %}
+
+{% block scripts %}
+    <script defer src="{% static '/scripts/email_from.js' %}"></script>
+{% endblock %}
 
 {% block container %}
+    <div id="results" class="flex flex-col items-start p-4 mt-12 mx-auto lg:px-12 lg:w-3/5 gap-2">
     {% for detail in details %}
+            <div class="res flex justify-start">
+                <div class="flex flex-col md:flex-row md:max-w-xl rounded-lg bg-gray-400 shadow-lg">
+                    <img class=" w-full max-h-48 object-cover md:w-48 rounded-t-lg md:rounded-none md:rounded-l-lg"
+                         src="{{ detail.web_image_url }}" alt=""/>
+                    <div class="p-6 flex flex-col justify-start">
+                        <h5 class="etitle text-gray-900 text-xl font-medium mb-2">{{ detail.web_title }}</h5>
+                        <p class="text-gray-700 text-base mb-4">
+                        <p>{{ detail.web_price }} $$</p>
+                        </p>
+                        <p class="text-gray-600 text-xs">{{ detail.web_author }}</p>
+                        <input type="text" class="price">
+                        <button class="price-btn">Set Alert!</button>
+                    </div>
+                </div>
+            </div>
 
-        <div class="Author">Bookstore: {{ detail.web_bookstore }} </div>
-        <div class="Author">Author: {{ detail.web_author }}</div>
-        <div class="Author">Price: {{ detail.web_price }}</div>
     {% endfor %}
-
+ </div>
 {% endblock %}
