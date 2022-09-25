@@ -23,7 +23,7 @@ class ScrapEngine:
     MATCH_SETTINGS = 0.75
 
     async def scrap_request(self, session, task):
-        timeout = aiohttp.ClientTimeout(total=60)
+        timeout = aiohttp.ClientTimeout(total=30)
         proxy = settings.PROXY_URL
 
         async with session.get(task.url, proxy=proxy, timeout=timeout) as response:
@@ -153,29 +153,25 @@ class Task:
                 'EBOOK_DETAILS': self.EBOOK_DETAILS
             }
 
-    async def self_save(self, data_from_bookstores):
-        @sync_to_async
-        def wrapper():
-            ct = ContentType.objects.get(app_label='scraper', model='fasttaskinfo')
-            new_model = models.ScrapEbookResult(
-                content_type=ct,
-                object_id=self.owner_model_id,
-                web_bookstore=self.bookstore_name,
-                web_author=data_from_bookstores['author'],
-                web_title=data_from_bookstores['title'],
-                web_price=data_from_bookstores['price'],
-                web_url=data_from_bookstores['url'],
-                web_image_url=data_from_bookstores['jpg']
-            )
+    @sync_to_async
+    def self_save(self, data_from_bookstores):
+        ct = ContentType.objects.get(app_label='scraper', model='fasttaskinfo')
+        new_model = models.ScrapEbookResult(
+            content_type=ct,
+            object_id=self.owner_model_id,
+            web_bookstore=self.bookstore_name,
+            web_author=data_from_bookstores['author'],
+            web_title=data_from_bookstores['title'],
+            web_price=data_from_bookstores['price'],
+            web_url=data_from_bookstores['url'],
+            web_image_url=data_from_bookstores['jpg']
+        )
 
-            # new_model.save()
-            try:
-                new_model.full_clean()
-                new_model.save()
-            except ValidationError:
-                return None
-
-        await wrapper()
+        try:
+            new_model.full_clean()
+            new_model.save()
+        except ValidationError:
+            return None
 
     async def email_price_checker(self, price_from_website):
         try:
