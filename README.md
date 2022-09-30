@@ -14,19 +14,22 @@ AioHttp, Django, Celery, Redis, PostgreSQL, Channels, Django Rest Framework and 
 
 ## Run 
 
-Clone the project
+1. Clone the project
 
 ```bash
   git clone https://github.com/MWasile/better_price
 ```
 
-Go to the project directory
+2. Go to the project directory
 
 ```bash
   cd better_price
 ```
 
-Start the server
+3. Based on env/.evn-default create your own .env file
+
+
+4. Start the server
 
 ```bash
   docker compose up
