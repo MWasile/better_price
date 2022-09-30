@@ -19,14 +19,14 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 
 django_asgi_app = get_asgi_application()
 
-import example_channels.routing
+import search_channels.routing
 
 application = ProtocolTypeRouter({
     "http": django_asgi_app,
     "websocket": AllowedHostsOriginValidator(
         AuthMiddlewareStack(
             URLRouter(
-                example_channels.routing.websocket_urlpatterns
+                search_channels.routing.websocket_urlpatterns
             )
         )
     )

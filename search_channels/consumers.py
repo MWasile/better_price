@@ -104,7 +104,7 @@ class SimpleConsumer(AsyncWebsocketConsumer):
         if not login_user.is_authenticated:
             login_user = None
 
-        signals.do_your_job.send(sender='X', channel_name=self.channel_name, user_input=data['message'],
+        signals.scrap_manager.send(sender='X', channel_name=self.channel_name, user_input=data['message'],
                                  user=login_user)
 
     async def frontend(self, event):

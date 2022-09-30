@@ -5,7 +5,7 @@ from django.core.mail import send_mail
 
 from . import signals
 from . import models
-from example_channels import consumers
+from search_channels import consumers
 from channels.layers import get_channel_layer
 
 
@@ -25,8 +25,8 @@ def email_sucess_manager(sender, scrap_data, **kwargs):
             task_model.mark_as_done()
 
 
-@receiver(signals.do_your_job)
-def do_your_job_manager(sender, channel_name, user_input, user=None, **kwargs):
+@receiver(signals.scrap_manager)
+def scrap_manager(sender, channel_name, user_input, user=None, **kwargs):
     channel_layer = get_channel_layer()
 
     massage_to_frontend = channel_layer.send(f"{channel_name}", {

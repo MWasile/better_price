@@ -44,7 +44,7 @@ INSTALLED_APPS = [
     'channels',
     'rest_framework',
 
-    'example_channels.apps.ExampleChannelsConfig',
+    'search_channels.apps.SearchChannelsConfig',
     'scraper.apps.ScraperConfig',
     'api.apps.ApiConfig',
     'users.apps.UsersConfig',
